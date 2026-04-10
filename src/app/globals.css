@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-primary: #0039A6;
+  --color-primary-dark: #002d85;
+  --color-accent: #FF6B35;
+  --color-success: #2D9B6F;
+  --color-background: #FFFFFF;
+  --color-surface: #F5F5F5;
+  --color-surface-2: #EBEBEB;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #9A9A9A;
+  --color-border: #E5E5E5;
+  --color-verified: #0039A6;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family:
+    var(--font-plus-jakarta-sans),
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family:
+    var(--font-syne),
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-scroll {
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+.app-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
