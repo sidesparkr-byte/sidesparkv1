@@ -1,15 +1,14 @@
 "use client";
 
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
-import { CheckCircle, ChevronLeft, Eye, EyeOff, Mail } from "lucide-react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
+import { CheckCircle, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast";
 import { sendPasswordReset, signIn, signUp } from "@/lib/auth";
-import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 type AuthMode = "signin" | "signup";
-type View = "form" | "verify" | "forgot" | "forgot_sent";
+type View = "form" | "forgot" | "forgot_sent";
 
 function getCallbackError(error?: string | null) {
   if (error === "auth_callback") {
@@ -104,24 +103,11 @@ function LoginPageContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(callbackError);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const passwordsMatch = password.length > 0 && password === confirmPassword;
   const hasConfirmPasswordValue = confirmPassword.length > 0;
   const signUpDisabled =
     isLoading || email.trim().length === 0 || password.length === 0 || confirmPassword.length === 0 || !passwordsMatch;
-
-  useEffect(() => {
-    if (resendCooldown <= 0) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setResendCooldown((current) => (current > 0 ? current - 1 : 0));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [resendCooldown]);
 
   function resetAuthState(nextMode: AuthMode) {
     setMode(nextMode);
@@ -133,7 +119,7 @@ function LoginPageContent() {
     setShowSignUpPassword(false);
     setShowConfirmPassword(false);
     setIsLoading(false);
-    setResendCooldown(0);
+    setForgotEmail("");
     setError(nextMode === "signin" ? callbackError : null);
   }
 
@@ -172,38 +158,15 @@ function LoginPageContent() {
       return;
     }
 
+    setMode("signin");
+    setView("form");
+    setPassword("");
+    setConfirmPassword("");
     setIsLoading(false);
-    setView("verify");
-    setResendCooldown(0);
-  }
-
-  async function handleResendVerification() {
-    if (!email || resendCooldown > 0) {
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const supabase = createSupabaseClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: email.trim().toLowerCase()
-      });
-
-      if (resendError) {
-        setError(resendError.message);
-        return;
-      }
-
-      showToast("Email sent!", { title: "Verification", variant: "success" });
-      setResendCooldown(30);
-    } catch (resendError) {
-      setError(resendError instanceof Error ? resendError.message : "Unable to resend verification email.");
-    } finally {
-      setIsLoading(false);
-    }
+    showToast("Account created. You can sign in now.", {
+      title: "Welcome to SideSpark",
+      variant: "success"
+    });
   }
 
   return (
@@ -422,65 +385,6 @@ function LoginPageContent() {
                 </div>
               ) : null}
             </form>
-          ) : null}
-
-          {mode === "signup" && view === "verify" ? (
-            <div className="flex flex-1 flex-col justify-center">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <Mail className="h-14 w-14 text-[var(--color-primary)]" />
-                <div className="space-y-2">
-                  <h2 className="font-[var(--font-heading)] text-[22px] font-bold text-[var(--color-text-primary)]">
-                    Check your Butler email
-                  </h2>
-                  <p className="text-sm text-[var(--color-text-secondary)]">
-                    We sent a verification link to
-                  </p>
-                  <p className="text-sm font-bold text-[var(--color-text-primary)]">{email}</p>
-                  <p className="text-[13px] text-[var(--color-text-secondary)]">
-                    Click the link to activate your account
-                  </p>
-                </div>
-              </div>
-
-              <div className="my-6 h-px w-full bg-[var(--color-border)]" />
-
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={isLoading || resendCooldown > 0}
-                  className="flex min-h-[52px] w-full items-center justify-center rounded-xl border-2 border-[var(--color-primary)] bg-white px-4 py-3 text-[15px] font-semibold text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : "Resend verification email"}
-                </button>
-
-                {error ? (
-                  <div className="rounded-lg border border-[var(--color-error-border,#FECACA)] bg-[var(--color-error-bg,#FEF2F2)] px-3.5 py-2.5 text-[13px] text-[var(--color-error-text,#DC2626)]">
-                    {error}
-                  </div>
-                ) : null}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail("");
-                    setPassword("");
-                    setConfirmPassword("");
-                    setForgotEmail("");
-                    setError(null);
-                    setIsLoading(false);
-                    setResendCooldown(0);
-                    setView("form");
-                    setMode("signup");
-                  }}
-                  className="min-h-11 w-full px-2 text-center text-[13px] text-[var(--color-text-secondary)] underline underline-offset-2"
-                >
-                  Wrong email? Start over
-                </button>
-              </div>
-            </div>
           ) : null}
 
           {view === "forgot" ? (
