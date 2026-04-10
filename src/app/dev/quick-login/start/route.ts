@@ -1,17 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 
 import { isDevAnyEmailDomainEnabled, isDevQuickLoginEnabled } from "@/lib/dev-preview";
 
 function getAdminEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
+  if (!url || !anonKey || !serviceRoleKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, or SUPABASE_SERVICE_ROLE_KEY."
+    );
   }
 
-  return { url, serviceRoleKey };
+  return { url, anonKey, serviceRoleKey };
 }
 
 function normalizeNextPath(nextPath?: string | null) {
@@ -24,7 +28,6 @@ function normalizeNextPath(nextPath?: string | null) {
   if (
     nextPath.startsWith("/login") ||
     nextPath.startsWith("/signup") ||
-    nextPath.startsWith("/verify") ||
     nextPath.startsWith("/callback")
   ) {
     return null;
@@ -76,7 +79,12 @@ async function ensureUserExists(
 ) {
   const { error } = await adminClient.auth.admin.createUser({
     email,
-    email_confirm: true
+    password: "testpassword123",
+    email_confirm: true,
+    user_metadata: {
+      first_name: email === "test1@butler.edu" ? "Alex" : email === "test2@butler.edu" ? "Jordan" : "Sam",
+      last_initial: email === "test1@butler.edu" ? "R" : email === "test2@butler.edu" ? "M" : "T"
+    }
   });
 
   if (!error) {
@@ -95,6 +103,10 @@ async function ensureUserExists(
 }
 
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV !== "development") {
+    return new Response("Not found", { status: 404 });
+  }
+
   if (!isDevQuickLoginEnabled()) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -112,7 +124,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { url, serviceRoleKey } = getAdminEnv();
+    const { url, anonKey, serviceRoleKey } = getAdminEnv();
     const adminClient = createSupabaseAdminClient(url, serviceRoleKey, {
       auth: {
         persistSession: false,
@@ -122,24 +134,31 @@ export async function GET(request: NextRequest) {
 
     await ensureUserExists(adminClient, email);
 
-    const callbackUrl = new URL("/callback", request.url);
-    if (nextPath) {
-      callbackUrl.searchParams.set("next", nextPath);
-    }
-
-    const { data, error } = await adminClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: {
-        redirectTo: callbackUrl.toString()
+    let response = NextResponse.redirect(new URL(nextPath ?? "/market", request.url));
+    const supabase = createServerClient(url, anonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          response = NextResponse.redirect(new URL(nextPath ?? "/market", request.url));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        }
       }
     });
 
-    if (error || !data?.properties?.action_link) {
-      return redirectToQuickLogin(request, "link_failed", email);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: "testpassword123"
+    });
+
+    if (error) {
+      return redirectToQuickLogin(request, "login_failed", email);
     }
 
-    return NextResponse.redirect(data.properties.action_link);
+    return response;
   } catch {
     return redirectToQuickLogin(request, "server_error", email);
   }

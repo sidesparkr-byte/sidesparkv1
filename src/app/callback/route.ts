@@ -1,38 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { EmailOtpType } from "@supabase/supabase-js";
 
-import { isDevAnyEmailDomainEnabled } from "@/lib/dev-preview";
+import { isAllowedAuthEmail } from "@/lib/dev-preview";
 import { createClient } from "@/lib/supabase/server";
 
-function isButlerEmail(email?: string | null) {
-  return typeof email === "string" && email.toLowerCase().endsWith("@butler.edu");
-}
-
-function normalizeNextPath(nextPath?: string | null) {
-  if (!nextPath || typeof nextPath !== "string") {
-    return null;
-  }
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return null;
-  }
-  if (
-    nextPath.startsWith("/login") ||
-    nextPath.startsWith("/signup") ||
-    nextPath.startsWith("/verify") ||
-    nextPath.startsWith("/callback")
-  ) {
-    return null;
-  }
-  return nextPath;
-}
-
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const tokenHash = requestUrl.searchParams.get("token_hash");
-  const otpType = requestUrl.searchParams.get("type");
-  const errorDescription = requestUrl.searchParams.get("error_description");
-  const nextPath = normalizeNextPath(requestUrl.searchParams.get("next"));
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+  const type = searchParams.get("type");
+  const errorDescription = searchParams.get("error_description");
+  const supabase = createClient();
 
   if (errorDescription) {
     const loginUrl = new URL("/login", request.url);
@@ -40,21 +16,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const supabase = createClient();
-  let authError: Error | null = null;
-
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    authError = error;
-  } else if (tokenHash && otpType) {
-    const { error } = await supabase.auth.verifyOtp({
-      type: otpType as EmailOtpType,
-      token_hash: tokenHash
-    });
-    authError = error;
-  } else {
-    authError = new Error("Missing auth callback parameters.");
+  if (!code) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
+
+  const { error: authError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (authError) {
     const loginUrl = new URL("/login", request.url);
@@ -67,6 +33,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (type === "recovery") {
+    return NextResponse.redirect(new URL("/reset-password", request.url));
+  }
+
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -75,7 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (!isDevAnyEmailDomainEnabled() && !isButlerEmail(user.email)) {
+  if (!isAllowedAuthEmail(user.email)) {
     await supabase.auth.signOut();
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "domain");
@@ -84,20 +54,13 @@ export async function GET(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name")
+    .select("id")
     .eq("id", user.id)
     .maybeSingle();
 
-  const hasFirstName =
-    typeof profile?.first_name === "string" && profile.first_name.trim().length > 0;
-
-  if (!hasFirstName) {
-    const onboardingUrl = new URL("/onboarding", request.url);
-    if (nextPath) {
-      onboardingUrl.searchParams.set("next", nextPath);
-    }
-    return NextResponse.redirect(onboardingUrl);
+  if (!profile) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
   }
 
-  return NextResponse.redirect(new URL(nextPath ?? "/market", request.url));
+  return NextResponse.redirect(new URL("/", request.url));
 }

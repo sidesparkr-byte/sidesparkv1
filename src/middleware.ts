@@ -3,9 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isDevAnyEmailDomainEnabled, isDevPreviewEnabled } from "@/lib/dev-preview";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const MAIN_ROUTE_PREFIXES = ["/feed", "/market", "/messages", "/profile", "/scan", "/rate"];
+const MAIN_ROUTE_PREFIXES = ["/activity", "/feed", "/market", "/messages", "/profile", "/scan", "/rate"];
 const AUTH_REQUIRED_EXTRA = ["/onboarding"];
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/verify", "/callback", "/api/health"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/callback", "/reset-password", "/api/health"];
 const BUTLER_DOMAIN = "@butler.edu";
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && (pathname === "/login" || pathname === "/signup" || pathname === "/verify")) {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     const marketUrl = request.nextUrl.clone();
     marketUrl.pathname = "/market";
     marketUrl.search = "";

@@ -12,52 +12,31 @@ const PROJECT_ROOT = path.resolve(__dirname, "..");
 
 const DEFAULT_TEST_USERS = [
   {
-    email: "test.buyer1@butler.edu",
-    firstName: "Avery",
-    lastInitial: "B",
+    email: "test1@butler.edu",
+    password: "testpassword123",
+    firstName: "Alex",
+    lastInitial: "R",
     graduationYear: 2027,
     major: "Finance",
-    bio: "Test buyer account for local QA."
+    bio: "Primary buyer test account for local QA."
   },
   {
-    email: "test.buyer2@butler.edu",
+    email: "test2@butler.edu",
+    password: "testpassword123",
     firstName: "Jordan",
-    lastInitial: "P",
+    lastInitial: "M",
     graduationYear: 2026,
     major: "Marketing",
-    bio: "Second buyer test account."
+    bio: "Secondary buyer test account for QA."
   },
   {
-    email: "test.seller1@butler.edu",
-    firstName: "Felipe",
-    lastInitial: "R",
-    graduationYear: 2026,
-    major: "Computer Science",
-    bio: "Primary seller test account."
-  },
-  {
-    email: "test.seller2@butler.edu",
-    firstName: "Cam",
-    lastInitial: "D",
-    graduationYear: 2028,
-    major: "Engineering",
-    bio: "Backup seller test account."
-  },
-  {
-    email: "test.tutor@butler.edu",
-    firstName: "Mina",
-    lastInitial: "L",
-    graduationYear: 2025,
-    major: "Economics",
-    bio: "Tutoring-focused test profile."
-  },
-  {
-    email: "test.service@butler.edu",
+    email: "test3@butler.edu",
+    password: "testpassword123",
     firstName: "Sam",
-    lastInitial: "R",
-    graduationYear: 2029,
-    major: "Design",
-    bio: "Service listing test profile."
+    lastInitial: "T",
+    graduationYear: 2028,
+    major: "Computer Science",
+    bio: "Seller-style test account for QA."
   }
 ];
 
@@ -79,27 +58,12 @@ const SAMPLE_LISTINGS = [
     description: "Sample service listing seeded for local QA."
   },
   {
-    title: "ECON 101 Tutoring",
-    type: "tutoring",
-    category: "Tutoring",
-    condition: null,
+    title: "Desk Lamp Bundle",
+    type: "item",
+    category: "Decor",
+    condition: "good",
     price: 25,
-    description: "Sample tutoring listing seeded for local QA."
-  },
-  {
-    title: "Spring Housing Sublet",
-    type: "housing_sublet",
-    category: "Housing",
-    condition: null,
-    price: 780,
-    description: "Sample student sublet listing seeded for local QA.",
-    availability: {
-      room_type: "Single",
-      roommates: 2,
-      term_start: "2026-08-15",
-      term_end: "2026-12-20",
-      distance: "On campus"
-    }
+    description: "Sample item listing seeded for local QA."
   }
 ];
 
@@ -218,6 +182,7 @@ async function createOrUpdateUser(adminClient, seedUser, dryRun) {
   if (existing) {
     if (!dryRun) {
       const { error } = await adminClient.auth.admin.updateUserById(existing.id, {
+        password: seedUser.password,
         email_confirm: true,
         user_metadata: {
           first_name: seedUser.firstName,
@@ -241,6 +206,7 @@ async function createOrUpdateUser(adminClient, seedUser, dryRun) {
 
   const { data, error } = await adminClient.auth.admin.createUser({
     email: seedUser.email,
+    password: seedUser.password,
     email_confirm: true,
     user_metadata: {
       first_name: seedUser.firstName,
@@ -258,6 +224,133 @@ async function createOrUpdateUser(adminClient, seedUser, dryRun) {
 async function upsertProfile(adminClient, user, seedUser, dryRun) {
   if (dryRun) return;
   const payload = toProfilePayload(user, seedUser);
+  const { error } = await adminClient.from("profiles").upsert(payload, { onConflict: "id" });
+  if (error) throw error;
+}
+
+async function seedListingsForUsers(adminClient, usersByEmail, dryRun) {
+  const targets = [
+    usersByEmail.get("test1@butler.edu"),
+    usersByEmail.get("test2@butler.edu"),
+    usersByEmail.get("test3@butler.edu")
+  ].filter(Boolean);
+
+  if (targets.length === 0) return { inserted: 0, skipped: 0 };
+
+  let inserted = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < targets.length; i += 1) {
+    const user = targets[i];
+    const seed = SAMPLE_LISTINGS[i % SAMPLE_LISTINGS.length];
+    const title = `${seed.title} (Seed)`;
+
+    const { data: existing, error: existingError } = await adminClient
+      .from("listings")
+      .select("id")
+      .eq("seller_id", user.id)
+      .eq("title", title)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (existing) {
+      skipped += 1;
+      continue;
+    }
+
+    if (dryRun) {
+      inserted += 1;
+      continue;
+    }
+
+    const payload = {
+      seller_id: user.id,
+      type: seed.type,
+      title,
+      description: seed.description,
+      price: seed.price,
+      category: seed.category,
+      condition: seed.condition,
+      photos: [],
+      availability: seed.availability || null,
+      status: "active"
+    };
+
+    const { error: insertError } = await adminClient.from("listings").insert(payload);
+    if (insertError) throw insertError;
+    inserted += 1;
+  }
+
+  return { inserted, skipped };
+}
+
+function selectUsers(args) {
+  const source = [...DEFAULT_TEST_USERS];
+  let filtered = source;
+
+  if (args.emails) {
+    const allow = new Set(args.emails);
+    filtered = filtered.filter((u) => allow.has(u.email.toLowerCase()));
+  }
+
+  if (args.count) {
+    filtered = filtered.slice(0, args.count);
+  }
+
+  return filtered;
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const { supabaseUrl, serviceRoleKey } = resolveEnv();
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
+  const users = selectUsers(args);
+  if (users.length === 0) {
+    console.log("No users selected. Nothing to seed.");
+    return;
+  }
+
+  console.log(
+    `Seeding ${users.length} test users${args.withListings ? " + sample listings" : ""}${args.dryRun ? " [dry-run]" : ""}...`
+  );
+
+  const usersByEmail = new Map();
+  let createdCount = 0;
+  let updatedCount = 0;
+
+  for (const seedUser of users) {
+    const { user, created } = await createOrUpdateUser(adminClient, seedUser, args.dryRun);
+    await upsertProfile(adminClient, user, seedUser, args.dryRun);
+    usersByEmail.set(seedUser.email.toLowerCase(), user);
+    if (created) createdCount += 1;
+    else updatedCount += 1;
+    console.log(`- ${seedUser.email} (${created ? "created" : "updated"})`);
+  }
+
+  let listingSummary = null;
+  if (args.withListings) {
+    listingSummary = await seedListingsForUsers(adminClient, usersByEmail, args.dryRun);
+  }
+
+  console.log("");
+  console.log("Seed complete.");
+  console.log(`Users created: ${createdCount}`);
+  console.log(`Users updated: ${updatedCount}`);
+  if (listingSummary) {
+    console.log(`Listings inserted: ${listingSummary.inserted}`);
+    console.log(`Listings skipped (already existed): ${listingSummary.skipped}`);
+  }
+}
+
+main().catch((error) => {
+  console.error("Seed failed.");
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+});
   const { error } = await adminClient.from("profiles").upsert(payload, { onConflict: "id" });
   if (error) throw error;
 }

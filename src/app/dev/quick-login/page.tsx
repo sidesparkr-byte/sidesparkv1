@@ -5,12 +5,9 @@ import { Button, Card, Input } from "@/components/ui";
 import { isDevQuickLoginEnabled } from "@/lib/dev-preview";
 
 const SUGGESTED_TEST_EMAILS = [
-  "test.buyer1@butler.edu",
-  "test.buyer2@butler.edu",
-  "test.seller1@butler.edu",
-  "test.seller2@butler.edu",
-  "test.tutor@butler.edu",
-  "test.service@butler.edu"
+  "test1@butler.edu",
+  "test2@butler.edu",
+  "test3@butler.edu"
 ];
 
 function normalizeNextPath(nextPath?: string | null) {
@@ -30,7 +27,9 @@ function errorMessage(code?: string) {
     case "email_not_allowed":
       return "That email is not allowed by DEV_QUICK_LOGIN_EMAILS.";
     case "link_failed":
-      return "Unable to generate quick-login link. Check Supabase auth config.";
+      return "Unable to sign in as that test user.";
+    case "login_failed":
+      return "Password sign-in failed for that test user.";
     case "server_error":
       return "Quick login failed due to a server error.";
     default:
@@ -58,7 +57,7 @@ export default function DevQuickLoginPage({
           Dev Quick Login
         </h1>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Local-only helper to switch between test users without waiting for email links.
+          Local-only helper to switch between test users with password sign-in.
         </p>
       </section>
 
@@ -76,7 +75,7 @@ export default function DevQuickLoginPage({
             type="email"
             name="email"
             label="Email"
-            placeholder="test.buyer1@butler.edu"
+            placeholder="test1@butler.edu"
             defaultValue={initialEmail}
             required
           />

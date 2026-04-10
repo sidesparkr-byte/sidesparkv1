@@ -29,7 +29,7 @@ This is the application itself: pages, layouts, and API routes.
 
 - `(auth)/`
   All authentication-related screens.
-  - `login/` handles OTP login and signup mode.
+  - `login/` handles email + password sign in, sign up, and reset flows.
   - `verify/` shows the "check your email" flow.
   - `onboarding/` collects first name, last initial, graduation year, major, bio, and avatar.
 
@@ -101,8 +101,8 @@ Database schema history.
 ## What Is Built Right Now
 
 ### 1. Auth and Onboarding
-- OTP login
-- Signup path using same OTP flow
+- Email + password sign in
+- Email + password signup with verification
 - Verify-email screen
 - Supabase callback handling
 - Butler-only enforcement, with dev bypass available
@@ -205,7 +205,7 @@ These can be removed without affecting the current runtime:
 - database migrations
 
 ## Main App Flow
-1. User logs in with OTP
+1. User logs in with email + password
 2. New user completes onboarding
 3. User lands on Market
 4. User browses listings or creates a listing
