@@ -141,7 +141,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="relative z-50 min-h-[calc(60px+env(safe-area-inset-bottom)+16px)] shrink-0 border-t border-[#E5E5E5] bg-white"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[430px] border-t border-[#E5E5E5] bg-white"
       aria-label="Primary"
     >
       <div className="grid min-h-[calc(60px+env(safe-area-inset-bottom)+16px)] grid-cols-5 px-2 pb-[calc(env(safe-area-inset-bottom)+16px)]">
@@ -161,7 +161,7 @@ export function BottomNav() {
             >
               {isPost ? (
                 <div className="relative flex h-full items-center justify-center">
-                  <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+76px)] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0039A6] text-white shadow-[0_4px_16px_rgba(0,57,166,0.35)]">
+                  <div className="absolute -top-4 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0039A6] text-white shadow-[0_4px_16px_rgba(0,57,166,0.35)]">
                     <NavIcon icon={item.icon} active={active} />
                   </div>
                 </div>
