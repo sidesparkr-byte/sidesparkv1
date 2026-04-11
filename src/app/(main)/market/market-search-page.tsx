@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ListingFeedCard } from "@/components/market/listing-feed-card";
@@ -102,22 +103,6 @@ function ClearIcon() {
       aria-hidden="true"
     >
       <path d="m6 6 8 8m0-8-8 8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-3.5 w-3.5 text-[var(--color-text-muted)]"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      aria-hidden="true"
-    >
-      <circle cx="10" cy="10" r="6.5" />
-      <path d="M10 6.6v3.9l2.5 1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -368,15 +353,6 @@ export function MarketSearchPage() {
     [executeQuery, searchQuery]
   );
 
-  const handleRefresh = useCallback(() => {
-    void executeQuery({
-      query: searchQuery,
-      category: selectedCategory,
-      nextPage: 0,
-      replace: true
-    });
-  }, [executeQuery, searchQuery, selectedCategory]);
-
   const applyRecentSearch = useCallback(
     (term: string) => {
       setSearchQuery(term);
@@ -444,18 +420,21 @@ export function MarketSearchPage() {
           </div>
 
           {isFocused && !searchQuery.trim() && recentSearches.length > 0 ? (
-            <div className="app-scroll -mx-1 flex gap-2 overflow-x-auto px-1">
-              {recentSearches.slice(0, 3).map((term) => (
-                <button
-                  key={term}
-                  type="button"
-                  onClick={() => applyRecentSearch(term)}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--color-background)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-                >
-                  <ClockIcon />
-                  <span>{term}</span>
-                </button>
-              ))}
+            <div>
+              <p className="mb-1.5 px-1 text-left text-[11px] text-[#9A9A9A]">Recent</p>
+              <div className="app-scroll -mx-1 flex gap-2 overflow-x-auto px-1">
+                {recentSearches.slice(0, 3).map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => applyRecentSearch(term)}
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#F5F5F5] px-3 text-[12px] font-medium text-[#6B6B6B]"
+                  >
+                    <Clock aria-hidden="true" className="h-3 w-3 text-[#9A9A9A]" strokeWidth={2} />
+                    <span>{term}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
 
@@ -474,8 +453,8 @@ export function MarketSearchPage() {
                   onClick={() => handleCategoryChange(chip.value)}
                   className={
                     active
-                      ? "min-h-11 shrink-0 rounded-full bg-[#0039A6] px-4 text-[13px] font-semibold text-white transition-colors duration-150 ease-in-out"
-                      : "min-h-11 shrink-0 rounded-full bg-[#F5F5F5] px-4 text-[13px] font-semibold text-[#6B6B6B] transition-colors duration-150 ease-in-out"
+                      ? "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#0039A6] px-4 text-[13px] font-semibold text-white transition-all duration-150 ease-in-out"
+                      : "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#F5F5F5] px-4 text-[13px] font-semibold text-[#6B6B6B] transition-all duration-150 ease-in-out"
                   }
                 >
                   {chip.label}
@@ -484,15 +463,8 @@ export function MarketSearchPage() {
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-3 px-1">
+          <div className="px-1">
             <p className="text-[13px] text-[#9A9A9A]">{countLabel}</p>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="text-[13px] font-medium text-[var(--color-primary)]"
-            >
-              Refresh
-            </button>
           </div>
         </div>
       </div>

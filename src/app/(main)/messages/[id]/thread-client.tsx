@@ -148,6 +148,43 @@ function MessageBubble({
   );
 }
 
+function EmptyMessageState({
+  listing,
+  listingPhoto
+}: {
+  listing: ListingSummary | null;
+  listingPhoto: string | null;
+}) {
+  return (
+    <div className="flex min-h-full items-center justify-center px-6 py-10 text-center">
+      <div className="w-full max-w-[260px]">
+        <div className="mx-auto h-16 w-16 overflow-hidden rounded-xl border border-[#E5E5E5] bg-[#F5F5F5]">
+          {listingPhoto ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={listingPhoto}
+              alt={listing?.title ?? "Listing"}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : null}
+        </div>
+        <p className="mt-2 line-clamp-2 text-center text-[14px] font-semibold text-[#1A1A1A]">
+          {listing?.title ?? "New conversation"}
+        </p>
+        {listing ? (
+          <p className="mt-1 text-center text-[13px] text-[#6B6B6B]">
+            {formatCurrency(Number(listing.price))}
+          </p>
+        ) : null}
+        <div className="mx-auto my-4 h-px w-[40%] bg-[#E5E5E5]" />
+        <p className="text-center text-[12px] text-[#9A9A9A]">Send a message to get started</p>
+      </div>
+    </div>
+  );
+}
+
 export function ThreadClient({
   conversationId,
   currentUserId,
@@ -403,32 +440,36 @@ export function ThreadClient({
         </div>
       ) : null}
 
-      <div ref={listRef} className="app-scroll flex-1 space-y-3 overflow-x-hidden overflow-y-auto bg-[var(--color-surface)] px-4 py-3">
-        {messages.map((message) => {
-          const label = dayLabel(message.created_at);
-          const showDay = label !== lastDay;
-          if (showDay) lastDay = label;
+      <div ref={listRef} className="app-scroll flex-1 space-y-3 overflow-x-hidden overflow-y-auto bg-white px-4 py-3">
+        {messages.length === 0 ? (
+          <EmptyMessageState listing={listing} listingPhoto={listingPhoto} />
+        ) : (
+          messages.map((message) => {
+            const label = dayLabel(message.created_at);
+            const showDay = label !== lastDay;
+            if (showDay) lastDay = label;
 
-          return (
-            <div key={message.id} className="space-y-3">
-              {showDay ? (
-                <div className="flex justify-center">
-                  <span className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]">
-                    {label}
-                  </span>
-                </div>
-              ) : null}
-              <MessageBubble
-                message={message}
-                isOwn={String(message.sender_id) === String(currentUserId)}
-                otherPersonName={otherPersonName}
-              />
-            </div>
-          );
-        })}
+            return (
+              <div key={message.id} className="space-y-3">
+                {showDay ? (
+                  <div className="flex justify-center">
+                    <span className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]">
+                      {label}
+                    </span>
+                  </div>
+                ) : null}
+                <MessageBubble
+                  message={message}
+                  isOwn={String(message.sender_id) === String(currentUserId)}
+                  otherPersonName={otherPersonName}
+                />
+              </div>
+            );
+          })
+        )}
       </div>
 
-      <div className="border-t border-[var(--color-border)] bg-[var(--color-background)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+76px)] z-20 border-t border-[var(--color-border)] bg-[var(--color-background)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2">
         {readOnlyPreview ? (
           <div className="mb-2 rounded-xl border border-[color:rgba(0,57,166,0.18)] bg-[color:rgba(0,57,166,0.08)] px-3 py-2 text-xs text-[var(--color-primary)]">
             Preview mode: chat is read-only until you sign in.

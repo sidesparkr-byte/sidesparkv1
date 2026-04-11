@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 
-import { Avatar, Badge, Card, EmptyState } from "@/components/ui";
+import { Avatar, Badge, Card } from "@/components/ui";
 import { isDevPreviewEnabled } from "@/lib/dev-preview";
 import { resolveSupabasePublicUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/server";
@@ -81,7 +82,7 @@ export default async function MessagesPage() {
     return (
       <div className="space-y-4 pb-2">
         <section className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">Messages</h1>
+          <h1 className="text-[18px] font-semibold text-[#1A1A1A]">Messages</h1>
           <p className="text-sm text-[var(--color-text-secondary)]">
             Preview mode. Sign in to open real conversations with buyers, sellers, and co-founders.
           </p>
@@ -118,7 +119,7 @@ export default async function MessagesPage() {
   if (conversationError) {
     return (
       <div className="space-y-4 pb-2">
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">Messages</h1>
+          <h1 className="text-[18px] font-semibold text-[#1A1A1A]">Messages</h1>
         <Card className="rounded-2xl border-[color:rgba(255,107,53,0.24)] bg-[color:rgba(255,107,53,0.10)] p-4 text-sm text-[var(--color-accent)]">
           {conversationError.message}
         </Card>
@@ -130,17 +131,13 @@ export default async function MessagesPage() {
 
   if (conversationRows.length === 0) {
     return (
-      <div className="space-y-4 pb-2">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">Messages</h1>
-        <EmptyState
-          icon={
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-              <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H9l-5 4V6.5Z" strokeLinejoin="round" />
-            </svg>
-          }
-          title="No conversations yet"
-          subtitle="Message a seller from any listing to start chatting."
-        />
+      <div className="space-y-3 pb-2">
+        <h1 className="text-[18px] font-semibold text-[#1A1A1A]">Messages</h1>
+        <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+          <MessageCircle className="h-10 w-10 text-[#E5E5E5]" strokeWidth={1.8} aria-hidden="true" />
+          <h2 className="mt-3 text-[16px] font-semibold text-[#1A1A1A]">No conversations yet</h2>
+          <p className="mt-1 text-[13px] text-[#9A9A9A]">Reserve an item to start chatting</p>
+        </div>
       </div>
     );
   }
@@ -200,13 +197,8 @@ export default async function MessagesPage() {
   });
 
   return (
-    <div className="space-y-4 pb-2">
-      <section className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">Messages</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Conversations with buyers and sellers, ordered by recent activity.
-        </p>
-      </section>
+    <div className="space-y-3 pb-2">
+      <h1 className="text-[18px] font-semibold text-[#1A1A1A]">Messages</h1>
 
       <div className="space-y-3">
         {sortedConversations.map((conversation) => {

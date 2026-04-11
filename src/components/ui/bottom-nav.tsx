@@ -141,10 +141,10 @@ export function BottomNav() {
 
   return (
     <nav
-      className="relative z-50 shrink-0 border-t border-[#E5E5E5] bg-white"
+      className="relative z-50 min-h-[calc(60px+env(safe-area-inset-bottom)+16px)] shrink-0 border-t border-[#E5E5E5] bg-white"
       aria-label="Primary"
     >
-      <div className="grid h-[calc(60px+env(safe-area-inset-bottom))] grid-cols-5 px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="grid min-h-[calc(60px+env(safe-area-inset-bottom)+16px)] grid-cols-5 px-2 pb-[calc(env(safe-area-inset-bottom)+16px)]">
         {bottomNavItems.map((item) => {
           const active = isItemActive(pathname, item.href, item.icon);
           const isPost = item.icon === "post";
@@ -160,8 +160,8 @@ export function BottomNav() {
               aria-current={active ? "page" : undefined}
             >
               {isPost ? (
-                <div className="flex h-full items-center justify-center">
-                  <div className="-mt-[14px] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0039A6] text-white shadow-[0_4px_16px_rgba(0,57,166,0.35)]">
+                <div className="relative flex h-full items-center justify-center">
+                  <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+76px)] flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#0039A6] text-white shadow-[0_4px_16px_rgba(0,57,166,0.35)]">
                     <NavIcon icon={item.icon} active={active} />
                   </div>
                 </div>

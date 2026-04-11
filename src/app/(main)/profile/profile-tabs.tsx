@@ -15,6 +15,7 @@ import { SignOutButton } from "@/app/(main)/profile/sign-out-button";
 type ProfileTabsProps = {
   currentUserId: string;
   isPreview?: boolean;
+  initialTab?: "about" | "listings" | "activity";
   bio: string | null;
   activeListings: MarketFeedItem[];
   reservedListings: Array<{
@@ -150,6 +151,7 @@ function SectionHeading({ title }: { title: string }) {
 export function ProfileTabs({
   currentUserId,
   isPreview = false,
+  initialTab = "listings",
   bio,
   activeListings,
   reservedListings,
@@ -157,7 +159,7 @@ export function ProfileTabs({
   ratings
 }: ProfileTabsProps) {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabId>("listings");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   return (
     <div className="space-y-4">

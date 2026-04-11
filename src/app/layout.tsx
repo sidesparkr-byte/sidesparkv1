@@ -39,6 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body
         className={`${syne.variable} ${plusJakartaSans.variable} h-full overflow-hidden bg-[var(--color-surface)] text-[var(--color-text-primary)] antialiased`}
       >

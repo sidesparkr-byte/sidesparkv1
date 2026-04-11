@@ -10,17 +10,15 @@ import type { MarketFeedItem } from "@/lib/market/types";
 import { ProfileTabs } from "@/app/(main)/profile/profile-tabs";
 
 type ProfileRow = {
-  email: string | null;
   first_name: string | null;
   last_initial: string | null;
   graduation_year: number | null;
   photo_url: string | null;
   bio: string | null;
   major: string | null;
-  dispute_strikes: number | null;
   average_rating: number | null;
-  total_ratings: number | null;
   total_trades: number | null;
+  created_at: string | null;
 };
 
 type ActiveListingRow = {
@@ -100,7 +98,7 @@ type AuthoredRatingRow = {
   stars: number;
 };
 
-function formatDisplayName(profile: ProfileRow | null, fallbackEmail?: string | null) {
+function formatDisplayName(profile: ProfileRow | null) {
   const first = profile?.first_name?.trim();
   const lastInitial = profile?.last_initial?.trim();
 
@@ -108,7 +106,7 @@ function formatDisplayName(profile: ProfileRow | null, fallbackEmail?: string | 
     return `${first}${lastInitial ? ` ${lastInitial}.` : ""}`;
   }
 
-  return fallbackEmail ?? "Student Profile";
+  return "Butler Student";
 }
 
 function formatMemberSince(value: string | null | undefined) {
@@ -216,7 +214,11 @@ function PreviewProfile() {
   );
 }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams
+}: {
+  searchParams?: { tab?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user }
@@ -232,9 +234,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "email,first_name,last_initial,graduation_year,photo_url,bio,major,dispute_strikes,average_rating,total_ratings,total_trades"
-    )
+    .select("first_name,last_initial,graduation_year,photo_url,bio,major,average_rating,total_trades,created_at")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
@@ -269,17 +269,19 @@ export default async function ProfilePage() {
         .eq("rater_id", user.id)
     ]);
 
-  const displayName = formatDisplayName(profile ?? null, user.email);
+  const displayName = formatDisplayName(profile ?? null);
   const sellerFirstName = profile?.first_name?.trim() || "You";
+  const avatarName = profile?.first_name?.trim() || "Butler Student";
   const major = profile?.major?.trim() || null;
   const bio = profile?.bio?.trim() || null;
   const gradYear = profile?.graduation_year ?? null;
+  const profileSubtitle = major && gradYear ? `${major} · ${gradYear}` : "Butler Student";
   const averageRating =
     typeof profile?.average_rating === "number"
       ? Number(Number(profile.average_rating).toFixed(1))
       : null;
   const totalTrades = Number(profile?.total_trades ?? 0);
-  const memberSince = formatMemberSince(user.created_at ?? null);
+  const memberSince = formatMemberSince(profile?.created_at ?? user.created_at ?? null);
   const activeListings = ((activeListingsResult.data ?? []) as ActiveListingRow[]).map((listing) =>
     toMarketFeedItem(listing, sellerFirstName, displayName, averageRating, totalTrades)
   );
@@ -301,13 +303,17 @@ export default async function ProfilePage() {
     ...rating,
     raterProfile: getJoinedObject(rating.profiles)
   }));
+  const initialTab =
+    searchParams?.tab === "about" || searchParams?.tab === "activity" || searchParams?.tab === "listings"
+      ? searchParams.tab
+      : "listings";
 
   return (
     <div className="space-y-5 pb-4">
       <section className="space-y-4 text-center">
         <Avatar
           src={resolveSupabasePublicUrl(profile?.photo_url ?? null, "avatars")}
-          name={displayName}
+          name={avatarName}
           alt={`${displayName} profile photo`}
           size="lg"
           className="mx-auto h-[72px] w-[72px] border-[3px] border-[#0039A6] ring-0"
@@ -318,7 +324,7 @@ export default async function ProfilePage() {
             {displayName}
           </h1>
           <p className="text-[13px] text-[var(--color-text-muted)]">
-            {[gradYear ? `Class of ${gradYear}` : null, major].filter(Boolean).join(" • ") || "Butler Student"}
+            {profileSubtitle}
           </p>
         </div>
         <div className="flex justify-center">
@@ -341,6 +347,7 @@ export default async function ProfilePage() {
       </section>
       <ProfileTabs
         currentUserId={user.id}
+        initialTab={initialTab}
         bio={bio}
         activeListings={activeListings}
         reservedListings={reservedListings}

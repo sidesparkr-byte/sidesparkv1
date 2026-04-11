@@ -293,8 +293,8 @@ export function FeedLanding() {
                 onClick={() => setSelectedCategory(chip.value)}
                 className={
                   active
-                    ? "min-h-11 shrink-0 rounded-full bg-[#0039A6] px-4 text-[13px] font-semibold text-white transition-colors duration-150 ease-in-out"
-                    : "min-h-11 shrink-0 rounded-full bg-[#F5F5F5] px-4 text-[13px] font-semibold text-[#6B6B6B] transition-colors duration-150 ease-in-out"
+                    ? "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#0039A6] px-4 text-[13px] font-semibold text-white transition-all duration-150 ease-in-out"
+                    : "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#F5F5F5] px-4 text-[13px] font-semibold text-[#6B6B6B] transition-all duration-150 ease-in-out"
                 }
               >
                 {chip.label}

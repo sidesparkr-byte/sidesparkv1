@@ -17,7 +17,7 @@ export function MainShell({ children }: { children: React.ReactNode }) {
           "app-scroll flex-1 overflow-x-hidden overflow-y-auto overscroll-contain",
           isFullscreenRoute
             ? "bg-black"
-            : "bg-[linear-gradient(180deg,rgba(255,255,255,0.52)_0%,rgba(245,245,245,0.96)_18%,rgba(245,245,245,1)_100%)] px-4 pb-4 pt-3"
+            : "bg-[linear-gradient(180deg,rgba(255,255,255,0.52)_0%,rgba(245,245,245,0.96)_18%,rgba(245,245,245,1)_100%)] px-4 pb-[calc(env(safe-area-inset-bottom)+100px)] pt-3"
         )}
       >
         {children}

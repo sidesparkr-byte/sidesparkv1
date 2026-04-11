@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Avatar, Badge, Card } from "@/components/ui";
+import { Avatar, Card } from "@/components/ui";
 import { isDevPreviewEnabled } from "@/lib/dev-preview";
 import { canonicalCategoryLabel } from "@/lib/market/filters";
 import { resolveSupabasePhotoArray, resolveSupabasePublicUrl } from "@/lib/media";
@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 
 import { ListingStatusControls } from "@/app/(main)/market/[id]/listing-status-controls";
+import { ListingDetailTopBar } from "@/app/(main)/market/[id]/listing-detail-top-bar";
 import { PhotoCarousel } from "@/app/(main)/market/[id]/photo-carousel";
 import { BuyerQrScanButton } from "@/app/(main)/market/[id]/qr-scan-handshake";
 import { SellerQrCodeButton } from "@/app/(main)/market/[id]/qr-handshake";
@@ -312,14 +313,18 @@ function PreviewListingDetail({ listing }: { listing: PreviewListing }) {
 
   return (
     <div className="space-y-5 overflow-x-hidden pb-[calc(124px+env(safe-area-inset-bottom))]">
-      <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
-        <div className="relative">
-          <PhotoCarousel photos={[]} title={listing.title} />
-          <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
-            Butler Verified
-          </span>
-        </div>
-      </section>
+      <div>
+        <ListingDetailTopBar title={listing.title} />
+
+        <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
+          <div className="relative">
+            <PhotoCarousel photos={[]} title={listing.title} />
+            <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
+              Butler Verified
+            </span>
+          </div>
+        </section>
+      </div>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -363,7 +368,7 @@ function PreviewListingDetail({ listing }: { listing: PreviewListing }) {
         <p className="text-sm leading-[1.6] text-[var(--color-text-secondary)]">{listing.description}</p>
       </section>
 
-      <div className="pointer-events-none sticky bottom-[calc(60px+env(safe-area-inset-bottom))] z-20 -mx-4">
+      <div className="pointer-events-none sticky bottom-[calc(env(safe-area-inset-bottom)+76px)] z-20 -mx-4">
         <div className="pointer-events-auto border-t border-[var(--color-border)] bg-[color:rgba(255,255,255,0.98)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
           <Link
             href="/messages/preview"
@@ -469,12 +474,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? (listing.availability as Record<string, unknown>)
       : null;
 
-  const rateTypeValue = getAvailabilityValue(availability, "rate_type", "rateType");
-  const rateType =
-    typeof rateTypeValue === "string" && rateTypeValue.trim()
-      ? toTitleCaseLabel(rateTypeValue)
-      : null;
-
   const sellerProfileHref = `/profile?sellerId=${encodeURIComponent(sellerId)}`;
   const isOwner = user?.id === sellerId;
   const isReservedForViewer = !!user && listing.reserved_by === user.id;
@@ -507,6 +506,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         : "Active listing";
   const postedAgo = `Posted ${formatTimeAgo(listing.created_at)}`;
   const locationLabel = listing.type === "service" ? "Butler area" : "Butler Campus";
+  const availabilityLabel = listing.type === "service" ? renderAvailabilitySummary(availability) : null;
   const sellerResponseTime = listing.type === "service" ? "Usually within 2 hours" : "Usually within 1 hour";
   const buyerReserveState =
     listing.status === "completed"
@@ -519,14 +519,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-5 overflow-x-hidden pb-[calc(132px+env(safe-area-inset-bottom))]">
-      <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
-        <div className="relative">
-          <PhotoCarousel photos={photos} title={listing.title} />
-          <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
-            Butler Verified
-          </span>
-        </div>
-      </section>
+      <div>
+        <ListingDetailTopBar title={listing.title} />
+
+        <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
+          <div className="relative">
+            <PhotoCarousel photos={photos} title={listing.title} />
+            <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
+              Butler Verified
+            </span>
+          </div>
+        </section>
+      </div>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -562,6 +566,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <div className="app-scroll flex gap-3 overflow-x-auto pb-1">
           {conditionLabel ? <DetailChip label="Condition" value={conditionLabel} /> : null}
           <DetailChip label="Location" value={locationLabel} />
+          {availabilityLabel ? <DetailChip label="Availability" value={availabilityLabel} /> : null}
         </div>
         <div className="h-px w-full bg-[var(--color-border)]" />
       </section>
@@ -602,48 +607,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
         </p>
       </section>
 
-      <Card className="rounded-2xl p-4">
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Listing Status</h2>
-        <div className="mt-3 space-y-2">
-          <DetailRow label="Status" value={statusSummary} />
-          {listing.status === "reserved" && listing.reserved_by ? (
-            <DetailRow
-              label="Access"
-              value={
-                isReservedForViewer
-                  ? "Reserved for you"
-                  : isOwner
-                    ? "Reserved by a buyer"
-                    : "Reserved"
-              }
-            />
-          ) : null}
-        </div>
-      </Card>
-
-      {listing.type === "service" && (
+      {isOwner ? (
         <Card className="rounded-2xl p-4">
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Service Details</h2>
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Listing Status</h2>
           <div className="mt-3 space-y-2">
-            <DetailRow label="Availability" value={renderAvailabilitySummary(availability)} />
-            {rateType ? <DetailRow label="Rate type" value={rateType} /> : null}
-            {listing.subjects && listing.subjects.length > 0 ? (
-              <div className="rounded-xl bg-[var(--color-surface)] px-3 py-2">
-                <p className="text-sm text-[var(--color-text-secondary)]">Subjects</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {listing.subjects.map((subject) => (
-                    <Badge key={subject} variant="neutral">
-                      {subject}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+            <DetailRow label="Status" value={statusSummary} />
+            {listing.status === "reserved" && listing.reserved_by ? (
+              <DetailRow label="Access" value="Reserved by a buyer" />
             ) : null}
           </div>
         </Card>
-      )}
+      ) : null}
 
-      <div className="pointer-events-none sticky bottom-[calc(60px+env(safe-area-inset-bottom))] z-20 -mx-4">
+      <div className="pointer-events-none sticky bottom-[calc(env(safe-area-inset-bottom)+76px)] z-20 -mx-4">
         <div className="pointer-events-auto border-t border-[var(--color-border)] bg-[color:rgba(255,255,255,0.98)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
           <div className="space-y-3">
             {isOwner ? (
@@ -668,7 +644,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 ) : (
                   <>
                     <Link
-                      href="/activity?tab=listed"
+                      href="/profile?tab=listings"
                       className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(0,57,166,0.18)] transition hover:bg-[var(--color-primary-dark)]"
                     >
                       View Listed
@@ -688,8 +664,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   <p className="py-3 text-center text-sm font-semibold text-[var(--color-success)]">
                     Transaction Complete ✓
                   </p>
-                ) : isReservedForViewer ? (
-                  <BuyerQrScanButton listingId={listing.id} />
                 ) : (
                   <ReserveItemButton
                     listingId={listing.id}
