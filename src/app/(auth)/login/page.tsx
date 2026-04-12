@@ -171,8 +171,8 @@ function LoginPageContent() {
 
   return (
     <main className="min-h-screen bg-white px-6 text-[var(--color-text-primary)]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[360px] flex-col pt-12">
-        <div className="mt-12 space-y-1 text-center">
+      <div className="mx-auto flex min-h-screen w-full max-w-[360px] flex-col justify-center py-8">
+        <div className="space-y-1 text-center">
           <h1 className="font-[var(--font-heading)] text-[28px] font-bold leading-none text-[var(--color-primary)]">
             SideSpark
           </h1>
@@ -206,70 +206,72 @@ function LoginPageContent() {
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col justify-center py-12">
+        <div className="mt-6 flex flex-col">
           {mode === "signin" && view === "form" ? (
-            <form className="space-y-5" onSubmit={handleSignInSubmit}>
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="email"
-                  className="block text-[12px] font-medium text-[var(--color-text-primary)]"
-                >
-                  Butler Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@butler.edu"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    if (error) {
-                      setError(null);
-                    }
-                  }}
-                  className="min-h-[52px] w-full rounded-xl bg-[var(--color-surface)] px-4 py-3.5 text-base text-[var(--color-text-primary)] outline-none ring-0 placeholder:text-[#9A9A9A] focus:outline focus:outline-2 focus:outline-[var(--color-primary)]"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <PasswordField
-                  id="password"
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(value) => {
-                    setPassword(value);
-                    if (error) {
-                      setError(null);
-                    }
-                  }}
-                  autoComplete="current-password"
-                  isVisible={showSignInPassword}
-                  onToggleVisibility={() => setShowSignInPassword((current) => !current)}
-                />
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError(null);
-                      setIsLoading(false);
-                      setForgotEmail(email);
-                      setView("forgot");
-                    }}
-                    className="min-h-11 px-1 text-[13px] text-[var(--color-primary)] underline underline-offset-2"
+            <form onSubmit={handleSignInSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="email"
+                    className="block text-[12px] font-medium text-[var(--color-text-primary)]"
                   >
-                    Forgot password?
-                  </button>
+                    Butler Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@butler.edu"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (error) {
+                        setError(null);
+                      }
+                    }}
+                    className="min-h-[52px] w-full rounded-xl bg-[var(--color-surface)] px-4 py-3.5 text-base text-[var(--color-text-primary)] outline-none ring-0 placeholder:text-[#9A9A9A] focus:outline focus:outline-2 focus:outline-[var(--color-primary)]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <PasswordField
+                    id="password"
+                    label="Password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(value) => {
+                      setPassword(value);
+                      if (error) {
+                        setError(null);
+                      }
+                    }}
+                    autoComplete="current-password"
+                    isVisible={showSignInPassword}
+                    onToggleVisibility={() => setShowSignInPassword((current) => !current)}
+                  />
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setError(null);
+                        setIsLoading(false);
+                        setForgotEmail(email);
+                        setView("forgot");
+                      }}
+                      className="min-h-11 px-1 text-[13px] text-[var(--color-primary)] underline underline-offset-2"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
+                className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {isLoading ? (
                   <>
@@ -290,80 +292,82 @@ function LoginPageContent() {
           ) : null}
 
           {mode === "signup" && view === "form" ? (
-            <form className="space-y-5" onSubmit={handleSignUpSubmit}>
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="signup-email"
-                  className="block text-[12px] font-medium text-[var(--color-text-primary)]"
-                >
-                  Butler Email
-                </label>
-                <input
-                  id="signup-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@butler.edu"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    if (error) {
-                      setError(null);
-                    }
-                  }}
-                  className="min-h-[52px] w-full rounded-xl bg-[var(--color-surface)] px-4 py-3.5 text-base text-[var(--color-text-primary)] outline-none ring-0 placeholder:text-[#9A9A9A] focus:outline focus:outline-2 focus:outline-[var(--color-primary)]"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSignUpSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="signup-email"
+                    className="block text-[12px] font-medium text-[var(--color-text-primary)]"
+                  >
+                    Butler Email
+                  </label>
+                  <input
+                    id="signup-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@butler.edu"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (error) {
+                        setError(null);
+                      }
+                    }}
+                    className="min-h-[52px] w-full rounded-xl bg-[var(--color-surface)] px-4 py-3.5 text-base text-[var(--color-text-primary)] outline-none ring-0 placeholder:text-[#9A9A9A] focus:outline focus:outline-2 focus:outline-[var(--color-primary)]"
+                    required
+                  />
+                </div>
 
-              <PasswordField
-                id="signup-password"
-                label="Create Password"
-                placeholder="Min. 8 characters"
-                value={password}
-                onChange={(value) => {
-                  setPassword(value);
-                  if (error) {
-                    setError(null);
-                  }
-                }}
-                autoComplete="new-password"
-                isVisible={showSignUpPassword}
-                onToggleVisibility={() => setShowSignUpPassword((current) => !current)}
-              />
-
-              <div className="space-y-1.5">
                 <PasswordField
-                  id="confirm-password"
-                  label="Confirm Password"
-                  placeholder="Re-enter your password"
-                  value={confirmPassword}
+                  id="signup-password"
+                  label="Create Password"
+                  placeholder="Min. 8 characters"
+                  value={password}
                   onChange={(value) => {
-                    setConfirmPassword(value);
+                    setPassword(value);
                     if (error) {
                       setError(null);
                     }
                   }}
                   autoComplete="new-password"
-                  isVisible={showConfirmPassword}
-                  onToggleVisibility={() => setShowConfirmPassword((current) => !current)}
+                  isVisible={showSignUpPassword}
+                  onToggleVisibility={() => setShowSignUpPassword((current) => !current)}
                 />
 
-                {hasConfirmPasswordValue ? (
-                  passwordsMatch ? (
-                    <p className="text-[12px] text-[var(--color-success)]">Passwords match ✓</p>
-                  ) : (
-                    <p className="text-[12px] text-[var(--color-error-text,#DC2626)]">
-                      Passwords don&apos;t match
-                    </p>
-                  )
-                ) : null}
+                <div className="space-y-1.5">
+                  <PasswordField
+                    id="confirm-password"
+                    label="Confirm Password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(value) => {
+                      setConfirmPassword(value);
+                      if (error) {
+                        setError(null);
+                      }
+                    }}
+                    autoComplete="new-password"
+                    isVisible={showConfirmPassword}
+                    onToggleVisibility={() => setShowConfirmPassword((current) => !current)}
+                  />
+
+                  {hasConfirmPasswordValue ? (
+                    passwordsMatch ? (
+                      <p className="text-[12px] text-[var(--color-success)]">Passwords match ✓</p>
+                    ) : (
+                      <p className="text-[12px] text-[var(--color-error-text,#DC2626)]">
+                        Passwords don&apos;t match
+                      </p>
+                    )
+                  ) : null}
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={signUpDisabled}
-                className={`mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
+                className={`mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
                   signUpDisabled
                     ? "cursor-not-allowed bg-[var(--color-border)] text-[#9A9A9A]"
                     : "bg-[var(--color-primary)] text-white"
@@ -414,7 +418,7 @@ function LoginPageContent() {
               </div>
 
               <form
-                className="mt-6 space-y-5"
+                className="mt-6"
                 onSubmit={async (event) => {
                   event.preventDefault();
                   setIsLoading(true);
@@ -447,7 +451,7 @@ function LoginPageContent() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
+                  className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
                 >
                   {isLoading ? (
                     <>

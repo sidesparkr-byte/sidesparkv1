@@ -56,7 +56,7 @@ export default function SellEntryPage() {
           What are you listing?
         </h1>
         <p className="max-w-[34ch] text-sm leading-6 text-[var(--color-text-secondary)]">
-          Choose a listing type to start. SideSpark is message-first for the MVP.
+          Choose what you&apos;re listing to get started.
         </p>
       </section>
 

@@ -20,6 +20,15 @@ const SERVICE_TYPES = [
   "Other"
 ] as const;
 
+const SELL_BUTTON_ACTIVE_CLASSES =
+  "cursor-pointer bg-[#0039A6] text-white opacity-100 disabled:bg-[#0039A6] disabled:text-white disabled:opacity-80 [&_svg]:h-[18px] [&_svg]:w-[18px]";
+const SELL_BUTTON_DISABLED_CLASSES =
+  "pointer-events-none cursor-not-allowed bg-[#E5E5E5] text-[#9A9A9A] opacity-100 shadow-none disabled:bg-[#E5E5E5] disabled:text-[#9A9A9A] disabled:opacity-100";
+
+function sellButtonClasses(isActive: boolean) {
+  return isActive ? SELL_BUTTON_ACTIVE_CLASSES : SELL_BUTTON_DISABLED_CLASSES;
+}
+
 export function ServiceSellForm({ userId }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -163,7 +172,12 @@ export function ServiceSellForm({ userId }: Props) {
           </p>
         )}
         {error ? <p className="text-sm text-[var(--color-accent)]">{error}</p> : null}
-        <Button loading={submitting} disabled={!canSubmit} onClick={handleSubmit}>
+        <Button
+          loading={submitting}
+          disabled={!canSubmit}
+          onClick={handleSubmit}
+          className={sellButtonClasses(canSubmit || submitting)}
+        >
           Post Listing
         </Button>
       </Card>

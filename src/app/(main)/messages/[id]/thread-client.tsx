@@ -8,7 +8,7 @@ import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 import { Avatar, Button, TextInput, useToast } from "@/components/ui";
 import { resolveSupabasePublicUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/client";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
 type ThreadMessage = {
   id: string;
@@ -95,15 +95,12 @@ function dayLabel(value: string) {
 
 function MessageBubble({
   message,
-  isOwn,
-  otherPersonName
+  isOwn
 }: {
   message: ThreadMessage;
   isOwn: boolean;
-  otherPersonName: string;
 }) {
   const flagged = containsOffPlatformRisk(message.content);
-  const incomingLabel = otherPersonName.trim() || "Other";
   return (
     <div className={isOwn ? "flex justify-end" : "flex justify-start"}>
       <div className="max-w-[85%] space-y-1">
@@ -114,17 +111,6 @@ function MessageBubble({
               : "rounded-2xl rounded-bl-md bg-[var(--color-surface-2)] px-3 py-2 text-[var(--color-text-primary)]"
           }
         >
-          <div className="mb-1">
-            <span
-              className={
-                isOwn
-                  ? "inline-flex rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
-                  : "inline-flex rounded-full bg-[var(--color-background)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]"
-              }
-            >
-              {isOwn ? "You" : incomingLabel}
-            </span>
-          </div>
           <p className="whitespace-pre-wrap break-words text-sm leading-5">
             {message.content}
           </p>
@@ -171,7 +157,7 @@ function EmptyMessageState({
           ) : null}
         </div>
         <p className="mt-2 line-clamp-2 text-center text-[14px] font-semibold text-[#1A1A1A]">
-          {listing?.title ?? "New conversation"}
+          {listing ? formatListingTitle(listing.title) : "New conversation"}
         </p>
         {listing ? (
           <p className="mt-1 text-center text-[13px] text-[#6B6B6B]">
@@ -389,7 +375,7 @@ export function ThreadClient({
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{listing.title}</p>
+                <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{formatListingTitle(listing.title)}</p>
                 <p className="truncate text-xs text-[var(--color-text-secondary)]">
                   {formatCurrency(Number(listing.price))} · Chat with {otherPersonName}
                 </p>
@@ -461,7 +447,6 @@ export function ThreadClient({
                 <MessageBubble
                   message={message}
                   isOwn={String(message.sender_id) === String(currentUserId)}
-                  otherPersonName={otherPersonName}
                 />
               </div>
             );

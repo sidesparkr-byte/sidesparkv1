@@ -1,32 +1,44 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BookOpen, ShoppingBag, Sparkles } from "lucide-react";
 
 type PhotoCarouselProps = {
   photos: string[];
   title: string;
+  categoryLabel: string;
 };
 
-function PlaceholderPhoto() {
+function CategoryIcon({ categoryLabel }: { categoryLabel: string }) {
+  if (categoryLabel === "Books") {
+    return <BookOpen aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />;
+  }
+  if (categoryLabel === "Services") {
+    return <Sparkles aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />;
+  }
+  return <ShoppingBag aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />;
+}
+
+function PlaceholderPhoto({
+  categoryLabel,
+  hidden = false
+}: {
+  categoryLabel: string;
+  hidden?: boolean;
+}) {
   return (
-    <div className="flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-surface-2)] text-[var(--color-text-muted)]">
-      <svg
-        viewBox="0 0 24 24"
-        className="h-10 w-10"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        aria-hidden="true"
-      >
-        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
-        <path d="m6.5 15 3-3 2.5 2.5 3.5-4 2 2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none" />
-      </svg>
+    <div
+      className={`${hidden ? "hidden " : ""}flex aspect-[4/3] w-full items-center justify-center bg-[linear-gradient(135deg,#EEF2FF_0%,#E8F4FD_100%)] text-[#0039A6]`}
+    >
+      <div className="flex flex-col items-center justify-center">
+        <CategoryIcon categoryLabel={categoryLabel} />
+        <p className="mt-2 text-[14px] font-medium text-[#0039A6]">{categoryLabel}</p>
+      </div>
     </div>
   );
 }
 
-export function PhotoCarousel({ photos, title }: PhotoCarouselProps) {
+export function PhotoCarousel({ photos, title, categoryLabel }: PhotoCarouselProps) {
   const safePhotos = photos.filter((photo) => typeof photo === "string" && photo.trim());
   const [activeIndex, setActiveIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +60,7 @@ export function PhotoCarousel({ photos, title }: PhotoCarouselProps) {
   }, [safePhotos.length]);
 
   if (safePhotos.length === 0) {
-    return <PlaceholderPhoto />;
+    return <PlaceholderPhoto categoryLabel={categoryLabel} />;
   }
 
   if (safePhotos.length === 1) {
@@ -61,7 +73,12 @@ export function PhotoCarousel({ photos, title }: PhotoCarouselProps) {
           className="h-full w-full object-cover"
           loading="lazy"
           decoding="async"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+          }}
         />
+        <PlaceholderPhoto categoryLabel={categoryLabel} hidden />
       </div>
     );
   }
@@ -83,7 +100,12 @@ export function PhotoCarousel({ photos, title }: PhotoCarouselProps) {
                 className="h-full w-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                }}
               />
+              <PlaceholderPhoto categoryLabel={categoryLabel} hidden />
             </div>
           </div>
         ))}

@@ -196,7 +196,7 @@ export function MarketSearchPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const [isFocused, setIsFocused] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -290,7 +290,6 @@ export function MarketSearchPage() {
   );
 
   useEffect(() => {
-    inputRef.current?.focus();
     setRecentSearches(readRecentSearches());
     void executeQuery({
       query: "",
@@ -398,12 +397,13 @@ export function MarketSearchPage() {
             <SearchIcon />
             <input
               ref={inputRef}
-              autoFocus
               type="search"
               value={searchQuery}
               onChange={(event) => handleInputChange(event.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => window.setTimeout(() => setIsFocused(false), 120)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                window.setTimeout(() => setIsSearchFocused(false), 150);
+              }}
               placeholder="Search items, books, services..."
               className="h-full w-full bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[#9A9A9A]"
             />
@@ -419,7 +419,7 @@ export function MarketSearchPage() {
             ) : null}
           </div>
 
-          {isFocused && !searchQuery.trim() && recentSearches.length > 0 ? (
+          {isSearchFocused && searchQuery.length === 0 && recentSearches.length > 0 ? (
             <div>
               <p className="mb-1.5 px-1 text-left text-[11px] text-[#9A9A9A]">Recent</p>
               <div className="app-scroll -mx-1 flex gap-2 overflow-x-auto px-1">

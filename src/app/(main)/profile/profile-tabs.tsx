@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 
@@ -8,7 +8,7 @@ import { Avatar, Card, useToast } from "@/components/ui";
 import { ListingFeedCard } from "@/components/market/listing-feed-card";
 import type { MarketFeedItem } from "@/lib/market/types";
 import { resolveSupabasePublicUrl } from "@/lib/media";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
 import { SignOutButton } from "@/app/(main)/profile/sign-out-button";
 
@@ -160,6 +160,19 @@ export function ProfileTabs({
 }: ProfileTabsProps) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const helpToastShown = useRef(false);
+
+  const handleHelpTap = () => {
+    if (helpToastShown.current) {
+      return;
+    }
+
+    helpToastShown.current = true;
+    showToast("Coming soon", { durationMs: 2500, title: "Help" });
+    window.setTimeout(() => {
+      helpToastShown.current = false;
+    }, 1000);
+  };
 
   return (
     <div className="space-y-4">
@@ -187,7 +200,7 @@ export function ProfileTabs({
               <SettingLinkRow label="Edit Profile" href="/profile/edit" />
               <SettingButtonRow
                 label="Help"
-                onClick={() => showToast("Coming soon", { title: "Help" })}
+                onClick={handleHelpTap}
               />
               <SignOutButton mode="row" className="border-b-0" />
             </section>
@@ -245,7 +258,7 @@ export function ProfileTabs({
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="line-clamp-1 text-sm font-semibold text-[var(--color-text-primary)]">
-                            {listing.title}
+                            {formatListingTitle(listing.title)}
                           </p>
                           <p className="mt-1 text-sm font-bold text-[var(--color-text-primary)]">
                             {formatCurrency(Number(listing.price))}
@@ -285,7 +298,7 @@ export function ProfileTabs({
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="line-clamp-1 text-sm font-semibold text-[var(--color-text-primary)]">
-                            {transaction.listing?.title ?? "Completed listing"}
+                            {transaction.listing?.title ? formatListingTitle(transaction.listing.title) : "Completed listing"}
                           </p>
                           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                             {role} · {formatShortDate(transaction.completed_at ?? transaction.created_at) ?? "recently"}

@@ -6,7 +6,7 @@ import { Avatar, Badge, Card } from "@/components/ui";
 import { isDevPreviewEnabled } from "@/lib/dev-preview";
 import { resolveSupabasePublicUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
 type ConversationRow = {
   id: string;
@@ -269,7 +269,7 @@ export default async function MessagesPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium text-[var(--color-text-secondary)]">
-                          {listing?.title ?? "Co-founder match"}
+                          {listing ? formatListingTitle(listing.title) : "Co-founder match"}
                         </p>
                         {typeof listing?.price === "number" ? (
                           <p className="text-xs text-[var(--color-text-muted)]">

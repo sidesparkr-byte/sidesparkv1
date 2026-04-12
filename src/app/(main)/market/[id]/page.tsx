@@ -6,7 +6,7 @@ import { isDevPreviewEnabled } from "@/lib/dev-preview";
 import { canonicalCategoryLabel } from "@/lib/market/filters";
 import { resolveSupabasePhotoArray, resolveSupabasePublicUrl } from "@/lib/media";
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
 import { ListingStatusControls } from "@/app/(main)/market/[id]/listing-status-controls";
 import { ListingDetailTopBar } from "@/app/(main)/market/[id]/listing-detail-top-bar";
@@ -224,8 +224,8 @@ function RatingStars({
   rating: number | null;
   totalTrades: number;
 }) {
-  if (typeof rating !== "number" || totalTrades === 0) {
-    return <p className="text-sm text-[var(--color-text-secondary)]">New seller · No trades yet</p>;
+  if (typeof rating !== "number" || totalTrades <= 0) {
+    return <p className="text-[12px] font-normal text-[#9A9A9A]">New to SideSpark ✦</p>;
   }
 
   const filledStars = Math.max(1, Math.min(5, Math.round(rating)));
@@ -314,11 +314,11 @@ function PreviewListingDetail({ listing }: { listing: PreviewListing }) {
   return (
     <div className="space-y-5 overflow-x-hidden pb-[calc(124px+env(safe-area-inset-bottom))]">
       <div>
-        <ListingDetailTopBar title={listing.title} />
+        <ListingDetailTopBar title={formatListingTitle(listing.title)} />
 
         <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
           <div className="relative">
-            <PhotoCarousel photos={[]} title={listing.title} />
+            <PhotoCarousel photos={[]} title={listing.title} categoryLabel={listing.category} />
             <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
               Butler Verified
             </span>
@@ -333,7 +333,7 @@ function PreviewListingDetail({ listing }: { listing: PreviewListing }) {
         </div>
         <div className="space-y-2">
           <h1 className="font-heading text-[24px] font-bold leading-[1.1] text-[var(--color-text-primary)]">
-            {listing.title}
+            {formatListingTitle(listing.title)}
           </h1>
           <p className="text-[28px] font-bold leading-none text-[var(--color-text-primary)]">
             {formatCurrency(listing.price)}
@@ -520,11 +520,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5 overflow-x-hidden pb-[calc(132px+env(safe-area-inset-bottom))]">
       <div>
-        <ListingDetailTopBar title={listing.title} />
+        <ListingDetailTopBar title={formatListingTitle(listing.title)} />
 
         <section className="-mx-4 overflow-hidden bg-[var(--color-background)]">
           <div className="relative">
-            <PhotoCarousel photos={photos} title={listing.title} />
+            <PhotoCarousel photos={photos} title={listing.title} categoryLabel={listingCategoryLabel} />
             <span className="pointer-events-none absolute left-4 top-4 inline-flex rounded-full bg-[#0039A6] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
               Butler Verified
             </span>
@@ -551,7 +551,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
             </Link>
           ) : null}
           <h1 className="font-heading text-[24px] font-bold leading-[1.1] text-[var(--color-text-primary)]">
-            {listing.title}
+            {formatListingTitle(listing.title)}
           </h1>
           <p className="text-[28px] font-bold leading-none text-[var(--color-text-primary)]">
             {formatCurrency(Number(listing.price))}
@@ -589,7 +589,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
               </div>
               <div className="space-y-2">
                 <DetailRow label="Response time" value={sellerResponseTime} />
-                <DetailRow label="Items Sold" value={String(completedTrades)} />
+                {completedTrades > 0 ? <DetailRow label="Items Sold" value={String(completedTrades)} /> : null}
                 <div className="rounded-xl bg-[var(--color-surface)] px-3 py-2">
                   <p className="mb-1 text-sm text-[var(--color-text-secondary)]">Rating</p>
                   <RatingStars rating={avgRating} totalTrades={completedTrades} />
@@ -665,10 +665,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
                     Transaction Complete ✓
                   </p>
                 ) : (
-                  <ReserveItemButton
-                    listingId={listing.id}
-                    disabledState={buyerReserveState}
-                  />
+                  <>
+                    <ReserveItemButton
+                      listingId={listing.id}
+                      disabledState={buyerReserveState}
+                    />
+                    {listing.status === "active" ? (
+                      <Link
+                        href={`/messages/start?listingId=${encodeURIComponent(listing.id)}`}
+                        className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl border-2 border-[#0039A6] bg-white px-4 text-[15px] font-semibold text-[#0039A6]"
+                      >
+                        Message Seller
+                      </Link>
+                    ) : null}
+                  </>
                 )}
               </>
             )}

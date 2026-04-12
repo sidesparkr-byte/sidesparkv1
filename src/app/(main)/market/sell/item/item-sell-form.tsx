@@ -22,6 +22,15 @@ const ITEM_CONDITIONS = [
   { label: "Fair", value: "fair" }
 ] as const;
 
+const SELL_BUTTON_ACTIVE_CLASSES =
+  "cursor-pointer bg-[#0039A6] text-white opacity-100 disabled:bg-[#0039A6] disabled:text-white disabled:opacity-80 [&_svg]:h-[18px] [&_svg]:w-[18px]";
+const SELL_BUTTON_DISABLED_CLASSES =
+  "pointer-events-none cursor-not-allowed bg-[#E5E5E5] text-[#9A9A9A] opacity-100 shadow-none disabled:bg-[#E5E5E5] disabled:text-[#9A9A9A] disabled:opacity-100";
+
+function sellButtonClasses(isActive: boolean) {
+  return isActive ? SELL_BUTTON_ACTIVE_CLASSES : SELL_BUTTON_DISABLED_CLASSES;
+}
+
 export function ItemSellForm({
   userId,
   initialCategory = ITEM_CATEGORIES[0]
@@ -132,11 +141,15 @@ export function ItemSellForm({
           <PhotoUploader
             photos={photos}
             onChange={setPhotos}
-            maxPhotos={5}
-            label="Step 1: Photos"
-            helperText="Upload up to 5 photos. Drag or use arrows to reorder."
+            maxPhotos={3}
+            label="Photos"
+            helperText="Add up to 3 photos"
           />
-          <Button disabled={!canAdvanceStep1} onClick={() => setStep(2)}>
+          <Button
+            disabled={!canAdvanceStep1}
+            onClick={() => setStep(2)}
+            className={sellButtonClasses(canAdvanceStep1)}
+          >
             Next
           </Button>
         </Card>
@@ -173,7 +186,11 @@ export function ItemSellForm({
             <Button variant="secondary" onClick={() => setStep(1)}>
               Back
             </Button>
-            <Button disabled={!canAdvanceStep2} onClick={() => setStep(3)}>
+            <Button
+              disabled={!canAdvanceStep2}
+              onClick={() => setStep(3)}
+              className={sellButtonClasses(canAdvanceStep2)}
+            >
               Next
             </Button>
           </div>
@@ -209,7 +226,12 @@ export function ItemSellForm({
             <Button variant="secondary" onClick={() => setStep(2)} disabled={submitting}>
               Back
             </Button>
-            <Button loading={submitting} disabled={!canSubmitStep3} onClick={handleSubmit}>
+            <Button
+              loading={submitting}
+              disabled={!canSubmitStep3}
+              onClick={handleSubmit}
+              className={sellButtonClasses(canSubmitStep3 || submitting)}
+            >
               Post Listing
             </Button>
           </div>
