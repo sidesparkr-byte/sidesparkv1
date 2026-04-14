@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type ScanState = "scanning" | "loading" | "success" | "error";
+type PageState = "scanning" | "loading" | "success" | "error";
 
 type CompleteResponse = {
   success?: boolean;
@@ -43,11 +43,10 @@ function XIcon() {
 export default function ScanPage() {
   const router = useRouter();
   const scannerRef = useRef<any>(null);
-  const successHandledRef = useRef(false);
-  const [scanState, setScanState] = useState<ScanState>("scanning");
+  const hasScanned = useRef(false);
+  const [pageState, setPageState] = useState<PageState>("scanning");
   const [errorMessage, setErrorMessage] = useState("");
-  const [listingTitle, setListingTitle] = useState("");
-  const [transactionId, setTransactionId] = useState("");
+  const [transactionData, setTransactionData] = useState<CompleteResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,16 +72,26 @@ export default function ScanPage() {
     };
 
     const handleScanSuccess = async (decodedText: string) => {
-      if (successHandledRef.current || cancelled) {
+      if (hasScanned.current) {
         return;
       }
-
-      successHandledRef.current = true;
-      setScanState("loading");
+      hasScanned.current = true;
 
       try {
-        await stopScanner();
+        await scanner.stop();
+      } catch (e) {
+        void e;
+      }
 
+      setPageState("loading");
+
+      const timeoutId = window.setTimeout(() => {
+        setErrorMessage("Request timed out. Try again.");
+        setPageState("error");
+        hasScanned.current = false;
+      }, 15000);
+
+      try {
         const response = await fetch("/api/transactions/complete", {
           method: "POST",
           headers: {
@@ -91,27 +100,28 @@ export default function ScanPage() {
           body: JSON.stringify({ qrToken: decodedText })
         });
 
-        const data = (await response.json().catch(() => ({}))) as CompleteResponse;
+        window.clearTimeout(timeoutId);
+        const data = (await response.json()) as CompleteResponse;
 
-        if (!response.ok || !data.success || !data.transactionId || !data.listingTitle) {
-          throw new Error(data.error || "Unable to confirm this transaction.");
+        if (!response.ok) {
+          throw new Error(data.error || "Something went wrong");
         }
 
-        if (cancelled) {
-          return;
-        }
+        setTransactionData(data);
+        setPageState("success");
 
-        setTransactionId(data.transactionId);
-        setListingTitle(data.listingTitle);
-        setScanState("success");
+        window.setTimeout(() => {
+          router.push(`/rate/${data.transactionId}`);
+        }, 1500);
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
+        window.clearTimeout(timeoutId);
         setErrorMessage(
-          error instanceof Error ? error.message : "Unable to confirm this transaction."
+          error instanceof Error
+            ? error.message
+            : "Could not confirm the trade. Try again."
         );
-        setScanState("error");
+        setPageState("error");
+        hasScanned.current = false;
       }
     };
 
@@ -143,12 +153,11 @@ export default function ScanPage() {
             ? error.message
             : "We couldn't start the camera scanner."
         );
-        setScanState("error");
+        setPageState("error");
       }
     };
 
-    if (scanState === "scanning") {
-      successHandledRef.current = false;
+    if (pageState === "scanning") {
       void startScanner();
     }
 
@@ -157,21 +166,15 @@ export default function ScanPage() {
       void stopScanner();
       scannerRef.current = null;
     };
-  }, [scanState]);
+  }, [pageState, router]);
 
   useEffect(() => {
-    if (scanState !== "success" || !transactionId) {
-      return;
-    }
+    return () => {
+      hasScanned.current = false;
+    };
+  }, []);
 
-    const timeout = window.setTimeout(() => {
-      router.push(`/rate/${transactionId}`);
-    }, 1500);
-
-    return () => window.clearTimeout(timeout);
-  }, [router, scanState, transactionId]);
-
-  if (scanState === "loading") {
+  if (pageState === "loading") {
     return (
       <div className="-mx-4 -my-3 flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-white px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))]">
         <div className="space-y-3 text-center">
@@ -182,7 +185,7 @@ export default function ScanPage() {
     );
   }
 
-  if (scanState === "success") {
+  if (pageState === "success") {
     return (
       <div className="-mx-4 -my-3 flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-white px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))]">
         <div className="flex max-w-[280px] flex-col items-center gap-4 text-center">
@@ -193,14 +196,14 @@ export default function ScanPage() {
             Handshake Complete ✓
           </h1>
           <p className="max-w-[240px] text-sm text-[var(--color-text-muted)]">
-            {listingTitle} picked up successfully
+            {transactionData?.listingTitle ?? "Item"} picked up successfully
           </p>
         </div>
       </div>
     );
   }
 
-  if (scanState === "error") {
+  if (pageState === "error") {
     return (
       <div className="-mx-4 -my-3 flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-white px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))]">
         <div className="flex max-w-[280px] flex-col items-center gap-4 text-center">
@@ -217,8 +220,9 @@ export default function ScanPage() {
             <button
               type="button"
               onClick={() => {
+                hasScanned.current = false;
                 setErrorMessage("");
-                setScanState("scanning");
+                setPageState("scanning");
               }}
               className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(0,57,166,0.18)] transition hover:bg-[var(--color-primary-dark)]"
             >

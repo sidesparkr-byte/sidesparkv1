@@ -180,13 +180,10 @@ export async function POST(request: Request) {
       sellerId: transaction.seller_id,
       buyerId: transaction.buyer_id,
       listingTitle: listing.title
-    });
-  } catch (error) {
+    }, { status: 200 });
+  } catch {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Unable to complete the transaction."
-      },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

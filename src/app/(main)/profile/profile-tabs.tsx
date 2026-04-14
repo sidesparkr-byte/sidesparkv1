@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Star } from "lucide-react";
+import { ChevronRight, Star, Trash2 } from "lucide-react";
 
 import { Avatar, Card, useToast } from "@/components/ui";
 import { ListingFeedCard } from "@/components/market/listing-feed-card";
@@ -10,6 +10,7 @@ import type { MarketFeedItem } from "@/lib/market/types";
 import { resolveSupabasePublicUrl } from "@/lib/media";
 import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
+import { RemoveListingModal } from "@/app/(main)/market/[id]/remove-listing-button";
 import { SignOutButton } from "@/app/(main)/profile/sign-out-button";
 
 type ProfileTabsProps = {
@@ -160,7 +161,13 @@ export function ProfileTabs({
 }: ProfileTabsProps) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [listings, setListings] = useState(activeListings);
+  const [removeTarget, setRemoveTarget] = useState<MarketFeedItem | null>(null);
   const helpToastShown = useRef(false);
+
+  useEffect(() => {
+    setListings(activeListings);
+  }, [activeListings]);
 
   const handleHelpTap = () => {
     if (helpToastShown.current) {
@@ -211,10 +218,22 @@ export function ProfileTabs({
       {activeTab === "listings" ? (
         <section className="space-y-3">
           <SectionHeading title="Active Listings" />
-          {activeListings.length > 0 ? (
+          {listings.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
-              {activeListings.map((listing) => (
-                <ListingFeedCard key={`profile-listing-${listing.id}`} item={listing} />
+              {listings.map((listing) => (
+                <div key={`profile-listing-${listing.id}`} className="relative">
+                  <ListingFeedCard item={listing} />
+                  <button
+                    type="button"
+                    onClick={() => setRemoveTarget(listing)}
+                    className="absolute right-1 top-1 z-20 flex min-h-11 min-w-11 items-start justify-end p-1"
+                    aria-label={`Remove ${listing.title}`}
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#DC2626] shadow-sm">
+                      <Trash2 className="h-4 w-4" aria-hidden="true" strokeWidth={2} />
+                    </span>
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
@@ -232,6 +251,18 @@ export function ProfileTabs({
               </Link>
             </Card>
           )}
+          {removeTarget ? (
+            <RemoveListingModal
+              listingId={removeTarget.id}
+              status="active"
+              isOpen
+              onClose={() => setRemoveTarget(null)}
+              onSuccess={(listingId) => {
+                setListings((current) => current.filter((listing) => listing.id !== listingId));
+                setRemoveTarget(null);
+              }}
+            />
+          ) : null}
         </section>
       ) : null}
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Info } from "lucide-react";
 
 import { Avatar, Card } from "@/components/ui";
 import { isDevPreviewEnabled } from "@/lib/dev-preview";
@@ -10,8 +11,10 @@ import { formatCurrency, formatListingTitle } from "@/lib/utils";
 
 import { ListingStatusControls } from "@/app/(main)/market/[id]/listing-status-controls";
 import { ListingDetailTopBar } from "@/app/(main)/market/[id]/listing-detail-top-bar";
+import { ListingRealtimeRefresh } from "@/app/(main)/market/[id]/listing-realtime-refresh";
 import { PhotoCarousel } from "@/app/(main)/market/[id]/photo-carousel";
 import { BuyerQrScanButton } from "@/app/(main)/market/[id]/qr-scan-handshake";
+import { RemoveListingButton } from "@/app/(main)/market/[id]/remove-listing-button";
 import { SellerQrCodeButton } from "@/app/(main)/market/[id]/qr-handshake";
 import { ReserveItemButton } from "@/app/(main)/market/[id]/reserve-item-button";
 
@@ -519,6 +522,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-5 overflow-x-hidden pb-[calc(132px+env(safe-area-inset-bottom))]">
+      <ListingRealtimeRefresh listingId={listing.id} />
       <div>
         <ListingDetailTopBar title={formatListingTitle(listing.title)} />
 
@@ -556,6 +560,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <p className="text-[28px] font-bold leading-none text-[var(--color-text-primary)]">
             {formatCurrency(Number(listing.price))}
           </p>
+          {isOwner && listing.status === "active" ? (
+            <div className="flex items-center gap-2 rounded-[10px] border border-[#C7D7FD] bg-[#EEF2FF] px-3.5 py-2.5">
+              <Info className="h-4 w-4 shrink-0 text-[#0039A6]" aria-hidden="true" strokeWidth={2} />
+              <p className="text-[13px] leading-[1.4] text-[#0039A6]">
+                When a buyer reserves this, a QR code will appear here to confirm pickup.
+              </p>
+            </div>
+          ) : null}
           {isOwner && listing.status === "reserved" && reservedBuyerFirstName ? (
             <div className="inline-flex rounded-xl bg-[color:rgba(0,57,166,0.10)] px-3 py-2 text-sm font-medium text-[var(--color-primary)]">
               Reserved by {reservedBuyerFirstName}
@@ -657,6 +669,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                     />
                   </>
                 )}
+                <RemoveListingButton listingId={listing.id} status={listing.status} />
               </>
             ) : (
               <>
@@ -671,12 +684,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
                       disabledState={buyerReserveState}
                     />
                     {listing.status === "active" ? (
-                      <Link
-                        href={`/messages/start?listingId=${encodeURIComponent(listing.id)}`}
-                        className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl border-2 border-[#0039A6] bg-white px-4 text-[15px] font-semibold text-[#0039A6]"
-                      >
-                        Message Seller
-                      </Link>
+                      <>
+                        <p className="mt-2 text-center text-[12px] text-[#9A9A9A]">
+                          Meet on campus · Pay at pickup
+                        </p>
+                        <Link
+                          href={`/messages/start?listingId=${encodeURIComponent(listing.id)}`}
+                          className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl border-2 border-[#0039A6] bg-white px-4 text-[15px] font-semibold text-[#0039A6]"
+                        >
+                          Message Seller
+                        </Link>
+                        <p className="mt-1.5 text-center text-[11px] text-[#9A9A9A]">
+                          Free to use · No fees during beta
+                        </p>
+                      </>
                     ) : null}
                   </>
                 )}
