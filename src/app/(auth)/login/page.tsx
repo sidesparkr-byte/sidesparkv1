@@ -4,7 +4,6 @@ import { FormEvent, Suspense, useMemo, useState } from "react";
 import { CheckCircle, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useToast } from "@/components/ui/toast";
 import { sendPasswordReset, signIn, signUp } from "@/lib/auth";
 
 type AuthMode = "signin" | "signup";
@@ -86,7 +85,6 @@ function PasswordField({
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast } = useToast();
   const callbackError = useMemo(
     () => getCallbackError(searchParams.get("error")),
     [searchParams]
@@ -158,15 +156,7 @@ function LoginPageContent() {
       return;
     }
 
-    setMode("signin");
-    setView("form");
-    setPassword("");
-    setConfirmPassword("");
-    setIsLoading(false);
-    showToast("Account created. You can sign in now.", {
-      title: "Welcome to SideSpark",
-      variant: "success"
-    });
+    router.push("/onboarding");
   }
 
   return (

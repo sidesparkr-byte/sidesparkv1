@@ -1,6 +1,5 @@
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
-const SIGNUP_CALLBACK_URL = "https://sidesparkv1bu.vercel.app/callback";
 const PASSWORD_RESET_URL = "https://sidesparkv1bu.vercel.app/reset-password";
 
 function normalizeEmail(email: string) {
@@ -62,7 +61,6 @@ export async function signUp(
       email: normalizedEmail,
       password,
       options: {
-        emailRedirectTo: SIGNUP_CALLBACK_URL,
         data: metadata ?? {}
       }
     });
@@ -108,7 +106,7 @@ export async function signIn(email: string, password: string) {
       }
 
       if (isEmailNotConfirmedError(error.message)) {
-        return { error: "Please verify your email before signing in. Check your Butler inbox." };
+        return { error: "This account cannot sign in yet. Try creating your account again." };
       }
 
       return { error: error.message };

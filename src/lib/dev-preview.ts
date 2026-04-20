@@ -2,18 +2,22 @@ function isDevelopmentEnvironment() {
   return process.env.NODE_ENV === "development";
 }
 
-function hasDevelopmentAllowedEmailDomain(email?: string | null) {
+function isValidEmail(email?: string | null) {
   if (typeof email !== "string") {
     return false;
   }
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  return (
-    normalizedEmail.endsWith("@butler.edu") ||
-    normalizedEmail.endsWith("@test.com") ||
-    normalizedEmail.endsWith("@dev.com")
-  );
+  // DEV ONLY — disabled in production
+  if (isDevelopmentEnvironment()) {
+    return (
+      normalizedEmail.endsWith("@butler.edu") ||
+      normalizedEmail.endsWith("@test.com")
+    );
+  }
+
+  return normalizedEmail.endsWith("@butler.edu");
 }
 
 export function isDevPreviewEnabled() {
@@ -54,7 +58,7 @@ export function isDevSeedHelpersEnabled() {
 }
 
 export function isAllowedAuthEmail(email?: string | null) {
-  if (hasDevelopmentAllowedEmailDomain(email)) {
+  if (isValidEmail(email)) {
     return true;
   }
 
