@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookOpen, Home, ShoppingBag, Sparkles } from "lucide-react";
 
 import { Card } from "@/components/ui";
 
@@ -6,45 +7,47 @@ const SELL_OPTIONS = [
   {
     href: "/market/sell/item?category=items",
     title: "Items",
-    subtitle: "Furniture, clothing, electronics, decor, and misc.",
-    icon: "bag"
+    subtitle: "Clothing, shoes and more.",
+    icon: "bag",
+    iconBg: "#EEF2FF",
+    iconColor: "#0039A6"
   },
   {
     href: "/market/sell/item?category=books",
     title: "Books",
     subtitle: "Textbooks and reading material.",
-    icon: "book"
+    icon: "book",
+    iconBg: "#EEFAF4",
+    iconColor: "#2D9B6F"
+  },
+  {
+    href: "/market/sell/item?category=furniture",
+    title: "Furniture",
+    subtitle: "Dorm and house essentials.",
+    icon: "home",
+    iconBg: "#FFF4EF",
+    iconColor: "#FF6B35"
   },
   {
     href: "/market/sell/service",
     title: "Services",
     subtitle: "Photography, DJing, moving help, cleaning, and more.",
-    icon: "spark"
+    icon: "spark",
+    iconBg: "#FEF9EE",
+    iconColor: "#F59E0B"
   }
 ] as const;
 
 function OptionIcon({ icon }: { icon: (typeof SELL_OPTIONS)[number]["icon"] }) {
   switch (icon) {
     case "bag":
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-          <path d="M4 8.5h16l-1.6 9.1A2 2 0 0 1 16.4 19H7.6a2 2 0 0 1-2-1.4L4 8.5Z" />
-          <path d="M8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5" strokeLinecap="round" />
-        </svg>
-      );
+      return <ShoppingBag className="h-5 w-5" strokeWidth={1.7} />;
     case "spark":
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-          <path d="M12 3.5 13.8 9l5.7 1.8-5.7 1.8L12 18.5l-1.8-5.9L4.5 10.8 10.2 9 12 3.5Z" strokeLinejoin="round" />
-        </svg>
-      );
+      return <Sparkles className="h-5 w-5" strokeWidth={1.7} />;
     case "book":
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-          <path d="M6.5 5.5h10A1.5 1.5 0 0 1 18 7v11.5H7.5A2.5 2.5 0 0 0 5 21V7a1.5 1.5 0 0 1 1.5-1.5Z" />
-          <path d="M7.5 18.5A2.5 2.5 0 0 0 5 21h12.5" strokeLinecap="round" />
-        </svg>
-      );
+      return <BookOpen className="h-5 w-5" strokeWidth={1.7} />;
+    case "home":
+      return <Home className="h-5 w-5" strokeWidth={1.7} />;
   }
 }
 
@@ -65,7 +68,13 @@ export default function SellEntryPage() {
           <Link key={option.href} href={option.href} className="block">
             <Card className="rounded-2xl p-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[color:rgba(0,57,166,0.10)] text-[var(--color-primary)]">
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{
+                    backgroundColor: option.iconBg,
+                    color: option.iconColor
+                  }}
+                >
                   <OptionIcon icon={option.icon} />
                 </div>
                 <div className="min-w-0 flex-1">

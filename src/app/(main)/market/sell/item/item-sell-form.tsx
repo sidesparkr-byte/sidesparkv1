@@ -12,9 +12,34 @@ import { createListingId, uploadListingPhotos } from "@/app/(main)/market/sell/_
 type ItemSellFormProps = {
   userId: string;
   initialCategory?: (typeof ITEM_CATEGORIES)[number];
+  initialCategoryGroup?: ItemCategoryGroup;
 };
 
 const ITEM_CATEGORIES = ["Items", "Books"] as const;
+type ItemCategoryGroup = "items" | "books" | "furniture";
+
+const ITEM_SUBCATEGORIES: Record<ItemCategoryGroup, string[]> = {
+  items: [
+    "Clothing — Women",
+    "Clothing — Men",
+    "Clothing — Unisex",
+    "Shoes — Women",
+    "Shoes — Men",
+    "Accessories",
+    "Electronics",
+    "Other Items"
+  ],
+  books: ["Textbooks", "Course Readers", "General Reading"],
+  furniture: [
+    "Seating",
+    "Desks and Storage",
+    "Lighting",
+    "Decor",
+    "Appliances",
+    "Other Furniture"
+  ]
+};
+
 const ITEM_CONDITIONS = [
   { label: "New (Unopened)", value: "new" },
   { label: "Like New", value: "like_new" },
@@ -31,9 +56,45 @@ function sellButtonClasses(isActive: boolean) {
   return isActive ? SELL_BUTTON_ACTIVE_CLASSES : SELL_BUTTON_DISABLED_CLASSES;
 }
 
+function SubcategoryPicker({
+  options,
+  value,
+  onChange
+}: {
+  options: string[];
+  value: string | null;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[13px] font-medium text-[#1A1A1A]">Sub-category</p>
+      <div className="app-scroll flex gap-2 overflow-x-auto">
+        {options.map((option) => {
+          const active = option === value;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onChange(option)}
+              className={
+                active
+                  ? "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#0039A6] px-3.5 text-[12px] font-semibold text-white transition-all duration-150 ease-in-out"
+                  : "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#F5F5F5] px-3.5 text-[12px] font-semibold text-[#6B6B6B] transition-all duration-150 ease-in-out"
+              }
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ItemSellForm({
   userId,
-  initialCategory = ITEM_CATEGORIES[0]
+  initialCategory = ITEM_CATEGORIES[0],
+  initialCategoryGroup = "items"
 }: ItemSellFormProps) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -42,7 +103,11 @@ export function ItemSellForm({
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<string>(initialCategory);
+  const [category] = useState<string>(initialCategory);
+  const [categoryGroup] = useState<ItemCategoryGroup>(initialCategoryGroup);
+  const [subCategory, setSubCategory] = useState<string | null>(
+    ITEM_SUBCATEGORIES[initialCategoryGroup][0] ?? null
+  );
   const [condition, setCondition] = useState<string>("like_new");
   const [priceInput, setPriceInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -87,7 +152,8 @@ export function ItemSellForm({
         title: title.trim(),
         description: description.trim(),
         price,
-        category,
+        category: categoryGroup === "furniture" ? "items" : category,
+        sub_category: subCategory,
         condition: condition === "new" ? "like_new" : condition,
         photos: uploadedPhotos
       });
@@ -172,11 +238,19 @@ export function ItemSellForm({
             maxLength={500}
             placeholder="Condition, dimensions, pickup details..."
           />
-          <Select label="Category" value={category} onChange={(event) => setCategory(event.target.value)}>
-            {ITEM_CATEGORIES.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </Select>
+          <div className="rounded-xl bg-[#F5F5F5] px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9A9A9A]">
+              Category
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-[#1A1A1A]">
+              {categoryGroup === "furniture" ? "Furniture" : category}
+            </p>
+          </div>
+          <SubcategoryPicker
+            options={ITEM_SUBCATEGORIES[categoryGroup]}
+            value={subCategory}
+            onChange={setSubCategory}
+          />
           <Select label="Condition" value={condition} onChange={(event) => setCondition(event.target.value)}>
             {ITEM_CONDITIONS.map((option) => (
               <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>

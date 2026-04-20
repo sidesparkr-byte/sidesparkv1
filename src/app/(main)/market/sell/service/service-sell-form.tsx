@@ -20,6 +20,15 @@ const SERVICE_TYPES = [
   "Other"
 ] as const;
 
+const SERVICE_SUBCATEGORIES = [
+  "Photography",
+  "Music and DJing",
+  "Moving Help",
+  "Fitness and Training",
+  "Cleaning",
+  "Other Services"
+] as const;
+
 const SELL_BUTTON_ACTIVE_CLASSES =
   "cursor-pointer bg-[#0039A6] text-white opacity-100 disabled:bg-[#0039A6] disabled:text-white disabled:opacity-80 [&_svg]:h-[18px] [&_svg]:w-[18px]";
 const SELL_BUTTON_DISABLED_CLASSES =
@@ -29,11 +38,45 @@ function sellButtonClasses(isActive: boolean) {
   return isActive ? SELL_BUTTON_ACTIVE_CLASSES : SELL_BUTTON_DISABLED_CLASSES;
 }
 
+function SubcategoryPicker({
+  value,
+  onChange
+}: {
+  value: string | null;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[13px] font-medium text-[#1A1A1A]">Sub-category</p>
+      <div className="app-scroll flex gap-2 overflow-x-auto">
+        {SERVICE_SUBCATEGORIES.map((option) => {
+          const active = option === value;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onChange(option)}
+              className={
+                active
+                  ? "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#0039A6] px-3.5 text-[12px] font-semibold text-white transition-all duration-150 ease-in-out"
+                  : "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#F5F5F5] px-3.5 text-[12px] font-semibold text-[#6B6B6B] transition-all duration-150 ease-in-out"
+              }
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ServiceSellForm({ userId }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
 
   const [serviceType, setServiceType] = useState<string>(SERVICE_TYPES[0]);
+  const [subCategory, setSubCategory] = useState<string | null>(SERVICE_SUBCATEGORIES[0]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rateInput, setRateInput] = useState("");
@@ -80,6 +123,7 @@ export function ServiceSellForm({ userId }: Props) {
         description: description.trim(),
         price: rate,
         category: "Services",
+        sub_category: subCategory,
         photos: uploadedPhotos,
         availability: {
           days: availability.days,
@@ -122,6 +166,13 @@ export function ServiceSellForm({ userId }: Props) {
             <option key={type} value={type}>{type}</option>
           ))}
         </Select>
+        <div className="rounded-xl bg-[#F5F5F5] px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9A9A9A]">
+            Category
+          </p>
+          <p className="mt-0.5 text-sm font-semibold text-[#1A1A1A]">Services</p>
+        </div>
+        <SubcategoryPicker value={subCategory} onChange={setSubCategory} />
         <Input label="Title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder="Dorm move-in help this weekend" />
         <TextArea label="Description" maxLength={500} value={description} onChange={(e) => setDescription(e.target.value.slice(0, 500))} placeholder="What's included, tools, turnaround, and limits..." />
         <Input label={`Rate (${rateType === "hourly" ? "per hour" : "per session"})`} type="number" step="0.01" min="0" value={rateInput} onChange={(e) => setRateInput(e.target.value)} placeholder="35.00" />

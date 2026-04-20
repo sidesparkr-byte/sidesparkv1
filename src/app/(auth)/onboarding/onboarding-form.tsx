@@ -45,6 +45,7 @@ export function OnboardingForm({
   const [bio, setBio] = useState(defaults?.bio ?? "");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +56,11 @@ export function OnboardingForm({
     () => `${firstName || "B"} ${lastInitial || "S"}`.trim(),
     [firstName, lastInitial]
   );
+  const canSubmit =
+    firstName.trim().length > 0 &&
+    lastInitial.trim().length > 0 &&
+    GRAD_YEARS.includes(Number(graduationYear) as (typeof GRAD_YEARS)[number]) &&
+    agreedToTerms;
 
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -103,6 +109,11 @@ export function OnboardingForm({
       return;
     }
 
+    if (!agreedToTerms) {
+      setError("You must agree to the Terms and Conditions to continue.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -142,6 +153,8 @@ export function OnboardingForm({
         graduation_year: gradYearNumber,
         major: major.trim() || null,
         bio: bio.trim() || null,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: "1.0",
         updated_at: new Date().toISOString()
       };
 
@@ -245,9 +258,69 @@ export function OnboardingForm({
           maxLength={180}
         />
 
+        <div className="!mt-6 border-t border-[#E5E5E5] pt-6">
+          <h2 className="text-[15px] font-semibold text-[#1A1A1A]">Before you join</h2>
+          <p className="mb-4 mt-1 text-[13px] text-[#6B6B6B]">
+            Here&apos;s what you&apos;re agreeing to:
+          </p>
+
+          <div className="space-y-2.5">
+            {[
+              "SideSpark connects buyers and sellers. We are not a party to any transaction.",
+              "All trades happen in person on campus in public locations only.",
+              "No in-app payments during beta. Coordinate payment directly with the other party.",
+              "You must be a currently enrolled Butler University student aged 18+."
+            ].map((point) => (
+              <div key={point} className="flex gap-2.5">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0039A6]" />
+                <p className="text-[13px] leading-[1.5] text-[#595959]">{point}</p>
+              </div>
+            ))}
+          </div>
+
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 block text-[13px] text-[#0039A6] underline underline-offset-2"
+          >
+            Read the full Terms and Conditions →
+          </a>
+
+          <label className="mt-4 flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(event) => {
+                setAgreedToTerms(event.target.checked);
+                setError(null);
+              }}
+              className="mt-0.5 h-[18px] min-w-[18px] accent-[#0039A6]"
+            />
+            <span className="text-[13px] leading-[1.5] text-[#1A1A1A]">
+              I have read and agree to SideSpark&apos;s{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#0039A6] underline underline-offset-2"
+              >
+                Terms and Conditions
+              </a>{" "}
+              and confirm I am a currently enrolled Butler University student aged 18 or
+              older.
+            </span>
+          </label>
+        </div>
+
         {error ? <p className="text-sm text-[var(--color-accent)]">{error}</p> : null}
 
-        <Button type="submit" loading={loading}>
+        <Button
+          type="submit"
+          loading={loading}
+          disabled={!canSubmit}
+          className="bg-[#0039A6] text-white disabled:bg-[#E5E5E5] disabled:text-[#9A9A9A] disabled:opacity-100"
+        >
           Get Started
         </Button>
       </form>

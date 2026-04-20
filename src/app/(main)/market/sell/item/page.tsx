@@ -17,6 +17,13 @@ export default async function SellItemPage({
   if (!user) redirect("/login");
 
   const initialCategory = searchParams?.category === "books" ? "Books" : "Items";
+  const initialCategoryGroup = searchParams?.category === "furniture" ? "furniture" : searchParams?.category === "books" ? "books" : "items";
 
-  return <ItemSellForm userId={user.id} initialCategory={initialCategory} />;
+  return (
+    <ItemSellForm
+      userId={user.id}
+      initialCategory={initialCategory}
+      initialCategoryGroup={initialCategoryGroup}
+    />
+  );
 }

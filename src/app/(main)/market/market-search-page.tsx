@@ -1,17 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { Clock } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  BookOpen,
+  ChevronDown,
+  Home,
+  Search,
+  SearchX,
+  ShoppingBag,
+  Sparkles
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ListingFeedCard } from "@/components/market/listing-feed-card";
-import { Card } from "@/components/ui";
+import type { MarketFeedItem } from "@/lib/market/types";
 import { createClient } from "@/lib/supabase/client";
-import { canonicalCategoryLabel } from "@/lib/market/filters";
-import type { MarketFeedItem, MarketMainCategory } from "@/lib/market/types";
 
 const PAGE_SIZE = 20;
-const RECENT_SEARCHES_KEY = "ss_recent_searches";
+
+type CategoryBlockId = "items" | "books" | "furniture" | "services";
+
+type CategoryBlock = {
+  id: CategoryBlockId;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  iconBg: string;
+  subcategories: string[];
+};
 
 type ListingQueryRow = {
   id: string;
@@ -21,6 +37,7 @@ type ListingQueryRow = {
   photos: string[] | null;
   category: string | null;
   type: "item" | "service";
+  sub_category: string | null;
   created_at: string;
   seller_id: string;
   profiles:
@@ -39,11 +56,89 @@ type ListingQueryRow = {
     | null;
 };
 
+type CountRow = {
+  sub_category: string | null;
+};
+
+type AggregateCountRow = {
+  sub_category: string | null;
+  count: number | string | null;
+};
+
+const CATEGORY_BLOCKS: CategoryBlock[] = [
+  {
+    id: "items",
+    name: "Items",
+    description: "Clothing, shoes and more",
+    iconBg: "#EEF2FF",
+    icon: <ShoppingBag className="h-5 w-5 text-[#0039A6]" strokeWidth={1.8} />,
+    subcategories: [
+      "Clothing — Women",
+      "Clothing — Men",
+      "Clothing — Unisex",
+      "Shoes — Women",
+      "Shoes — Men",
+      "Accessories",
+      "Electronics",
+      "Other Items"
+    ]
+  },
+  {
+    id: "books",
+    name: "Books",
+    description: "Textbooks and reading material",
+    iconBg: "#EEFAF4",
+    icon: <BookOpen className="h-5 w-5 text-[#2D9B6F]" strokeWidth={1.8} />,
+    subcategories: ["Textbooks", "Course Readers", "General Reading"]
+  },
+  {
+    id: "furniture",
+    name: "Furniture",
+    description: "Dorm and house essentials",
+    iconBg: "#FFF4EF",
+    icon: <Home className="h-5 w-5 text-[#FF6B35]" strokeWidth={1.8} />,
+    subcategories: [
+      "Seating",
+      "Desks and Storage",
+      "Lighting",
+      "Decor",
+      "Appliances",
+      "Other Furniture"
+    ]
+  },
+  {
+    id: "services",
+    name: "Services",
+    description: "Photography, DJing and more",
+    iconBg: "#FEF9EE",
+    icon: <Sparkles className="h-5 w-5 text-[#F59E0B]" strokeWidth={1.8} />,
+    subcategories: [
+      "Photography",
+      "Music and DJing",
+      "Moving Help",
+      "Fitness and Training",
+      "Cleaning",
+      "Other Services"
+    ]
+  }
+];
+
 function getProfileObject(row: ListingQueryRow) {
   if (!row.profiles) {
     return null;
   }
   return Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles;
+}
+
+function canonicalCategoryLabel(row: ListingQueryRow) {
+  if (row.type === "service") {
+    return "Services";
+  }
+  const category = row.category?.trim().toLowerCase() ?? "";
+  if (category.includes("book") || category.includes("textbook") || category.includes("reader")) {
+    return "Books";
+  }
+  return "Items";
 }
 
 function toFeedItem(row: ListingQueryRow): MarketFeedItem {
@@ -68,500 +163,336 @@ function toFeedItem(row: ListingQueryRow): MarketFeedItem {
         : null,
     totalTrades: Number(profile?.total_trades ?? 0),
     distanceLabel: "Butler Campus",
-    categoryLabel: canonicalCategoryLabel(row.category, row.type),
+    categoryLabel: canonicalCategoryLabel(row),
     typeLabel: row.type === "service" ? "Service" : "Item"
   };
 }
 
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-4 w-4 text-[#9A9A9A]"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path
-        d="m13.8 13.8 3.2 3.2M8.8 14.6a5.8 5.8 0 1 0 0-11.6 5.8 5.8 0 0 0 0 11.6Z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ClearIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <path d="m6 6 8 8m0-8-8 8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CategoryIcon({ category }: { category: MarketMainCategory }) {
-  if (category === "books") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <path d="M5.5 6.5A2.5 2.5 0 0 1 8 4h9v15.5H8A2.5 2.5 0 0 0 5.5 22V6.5Z" strokeLinejoin="round" />
-        <path d="M8 4v15.5M10.5 8h4.5M10.5 11h4.5" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (category === "services") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h2.1l1.2-1.6h4.4L15.4 6h2.1A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" strokeLinejoin="round" />
-        <circle cx="12" cy="12.5" r="3.2" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-      <path d="M7 11V8.5A2.5 2.5 0 0 1 9.5 6h5A2.5 2.5 0 0 1 17 8.5V11" strokeLinecap="round" />
-      <path d="M6 11h12v5H6z" strokeLinejoin="round" />
-      <path d="M7 16v2.5M17 16v2.5M4.5 18.5h15" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function SkeletonCard() {
   return (
-    <div className="h-full min-h-[238px] overflow-hidden rounded-[16px] border border-[var(--color-border)] bg-[var(--color-background)] p-0 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-      <div className="grid h-full grid-rows-[58fr_42fr]">
-        <div className="skeleton-shimmer rounded-t-xl" />
-        <div className="space-y-2 p-2">
-          <div className="skeleton-shimmer h-5 w-16 rounded-full" />
+    <div className="h-full min-h-[238px] overflow-hidden rounded-[16px] border border-[#E5E5E5] bg-white p-0 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+      <div className="flex h-full flex-col">
+        <div className="skeleton-shimmer aspect-square rounded-t-xl" />
+        <div className="flex min-h-[88px] flex-col space-y-2 px-3 py-2.5">
+          <div className="skeleton-shimmer h-[22px] w-16 rounded-full" />
           <div className="skeleton-shimmer h-3 rounded" />
           <div className="skeleton-shimmer h-3 w-4/5 rounded" />
-          <div className="skeleton-shimmer mt-1 h-4 w-2/3 rounded" />
-          <div className="skeleton-shimmer h-3 w-3/4 rounded" />
+          <div className="skeleton-shimmer mt-auto h-4 w-2/3 rounded" />
         </div>
       </div>
     </div>
   );
 }
 
-function readRecentSearches() {
-  if (typeof window === "undefined") {
-    return [] as string[];
-  }
+function CategoryBlockCard({
+  block,
+  counts,
+  isOpen,
+  selectedSubcategory,
+  onToggle,
+  onSelect
+}: {
+  block: CategoryBlock;
+  counts: Record<string, number>;
+  isOpen: boolean;
+  selectedSubcategory: string | null;
+  onToggle: () => void;
+  onSelect: (subcategory: string) => void;
+}) {
+  return (
+    <div
+      className={`overflow-hidden rounded-xl border bg-white transition-colors duration-150 ${
+        isOpen ? "border-[#0039A6]" : "border-[#E5E5E5]"
+      }`}
+      style={{ borderWidth: "0.5px" }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex min-h-[64px] w-full cursor-pointer items-center justify-between px-4 py-3.5 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+            style={{ backgroundColor: block.iconBg }}
+          >
+            {block.icon}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-semibold text-[#1A1A1A]">{block.name}</span>
+            <span className="block truncate text-xs text-[#9A9A9A]">{block.description}</span>
+          </span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-[#9A9A9A] transition-transform duration-200 ease-in-out ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          strokeWidth={2}
+        />
+      </button>
 
-  try {
-    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeRecentSearches(term: string) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const normalized = term.trim();
-  if (!normalized) {
-    return;
-  }
-
-  const current = readRecentSearches();
-  const next = [normalized, ...current.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, 5);
-  window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      {isOpen ? (
+        <div className="border-t border-[#E5E5E5] py-2" style={{ borderTopWidth: "0.5px" }}>
+          {block.subcategories.map((subcategory) => {
+            const selected = selectedSubcategory === subcategory;
+            return (
+              <button
+                key={subcategory}
+                type="button"
+                onClick={() => onSelect(subcategory)}
+                className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5 pl-16 text-left text-sm ${
+                  selected ? "font-semibold text-[#0039A6]" : "font-normal text-[#595959]"
+                }`}
+              >
+                <span>{subcategory}</span>
+                <span className="rounded-full bg-[#F5F5F5] px-2 py-0.5 text-[11px] font-medium text-[#9A9A9A]">
+                  {counts[subcategory] ?? 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function MarketSearchPage() {
-  const supabase = createClient();
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const supabase = useMemo(() => createClient(), []);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<MarketMainCategory>("all");
+  const [openBlock, setOpenBlock] = useState<CategoryBlockId | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [results, setResults] = useState<MarketFeedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(true);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const executeQuery = useCallback(
-    async ({
-      query,
-      category,
-      nextPage,
-      replace
-    }: {
-      query: string;
-      category: MarketMainCategory;
-      nextPage: number;
-      replace: boolean;
-    }) => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-      setIsLoading(true);
-      setError(null);
+  useEffect(() => {
+    let isMounted = true;
 
-      let builder = supabase
+    const loadCounts = async () => {
+      setIsLoadingCounts(true);
+      const { data, error: aggregateError } = await supabase
         .from("listings")
-        .select(
-          "id,title,description,price,photos,category,type,created_at,seller_id,profiles!listings_seller_id_fkey(first_name,last_initial,average_rating,total_trades)",
-          { count: nextPage === 0 ? "exact" : undefined }
-        )
+        .select("sub_category,count()")
         .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .range(nextPage * PAGE_SIZE, nextPage * PAGE_SIZE + PAGE_SIZE - 1);
+        .not("sub_category", "is", null);
 
-      const trimmedQuery = query.trim();
-      if (trimmedQuery) {
-        const escaped = trimmedQuery.replace(/[%_,]/g, (match) => `\\${match}`);
-        builder = builder.or(`title.ilike.%${escaped}%,description.ilike.%${escaped}%`);
-      }
-
-      if (category !== "all") {
-        const categoryLabel =
-          category === "items" ? "Items" : category === "books" ? "Books" : "Services";
-        builder = builder.eq("category", categoryLabel);
-      }
-
-      const { data, error: queryError, count } = await builder;
-
-      if (requestIdRef.current !== requestId) {
+      if (!isMounted) {
         return;
       }
 
-      if (queryError) {
-        setError(queryError.message);
-        setResults((current) => (replace ? [] : current));
-        setHasMore(false);
-        setIsLoading(false);
+      if (!aggregateError) {
+        const nextCounts = ((data ?? []) as AggregateCountRow[]).reduce<Record<string, number>>(
+          (accumulator, row) => {
+            const subcategory = row.sub_category?.trim();
+            if (subcategory) {
+              accumulator[subcategory] = Number(row.count ?? 0);
+            }
+            return accumulator;
+          },
+          {}
+        );
+
+        setCounts(nextCounts);
+        setIsLoadingCounts(false);
         return;
       }
 
-      const mapped = ((data ?? []) as ListingQueryRow[]).map(toFeedItem);
+      const { data: fallbackData, error: countsError } = await supabase
+        .from("listings")
+        .select("sub_category")
+        .eq("status", "active")
+        .not("sub_category", "is", null);
 
-      setResults((current) => (replace ? mapped : [...current, ...mapped]));
-      setHasMore(mapped.length === PAGE_SIZE);
-      setPage(nextPage);
-      if (typeof count === "number") {
-        setTotalCount(count);
-      } else if (replace) {
-        setTotalCount(mapped.length);
+      if (!isMounted) {
+        return;
       }
-      if (replace && trimmedQuery) {
-        writeRecentSearches(trimmedQuery);
-        setRecentSearches(readRecentSearches());
-      }
-      setIsLoading(false);
-    },
-    [supabase]
-  );
 
-  const debouncedSearch = useCallback(
-    (value: string, category: MarketMainCategory) => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      if (countsError) {
+        setError(countsError.message);
+        setIsLoadingCounts(false);
+        return;
       }
-      debounceRef.current = setTimeout(() => {
-        void executeQuery({
-          query: value,
-          category,
-          nextPage: 0,
-          replace: true
-        });
-      }, 300);
-    },
-    [executeQuery]
-  );
+
+      const nextCounts = ((fallbackData ?? []) as CountRow[]).reduce<Record<string, number>>(
+        (accumulator, row) => {
+          const subcategory = row.sub_category?.trim();
+          if (subcategory) {
+            accumulator[subcategory] = (accumulator[subcategory] ?? 0) + 1;
+          }
+          return accumulator;
+        },
+        {}
+      );
+
+      setCounts(nextCounts);
+      setIsLoadingCounts(false);
+    };
+
+    void loadCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
 
   useEffect(() => {
-    setRecentSearches(readRecentSearches());
-    void executeQuery({
-      query: "",
-      category: "all",
-      nextPage: 0,
-      replace: true
-    });
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
 
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [executeQuery]);
+  }, [searchInput]);
+
+  const loadListings = useCallback(
+    async (subcategory: string, query: string) => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      setIsLoadingResults(true);
+      setError(null);
+
+      let builder = supabase
+        .from("listings")
+        .select(
+          "id,title,description,price,photos,category,type,sub_category,created_at,seller_id,profiles!listings_seller_id_fkey(first_name,last_initial,average_rating,total_trades)"
+        )
+        .eq("status", "active")
+        .eq("sub_category", subcategory)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (query) {
+        const escaped = query.replace(/[%_,]/g, (match) => `\\${match}`);
+        builder = builder.or(`title.ilike.%${escaped}%,description.ilike.%${escaped}%`);
+      }
+
+      const { data, error: listingsError } = await builder;
+
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (listingsError) {
+        setError(listingsError.message);
+        setResults([]);
+        setIsLoadingResults(false);
+        return;
+      }
+
+      setResults(((data ?? []) as ListingQueryRow[]).map(toFeedItem));
+      setIsLoadingResults(false);
+    },
+    [supabase]
+  );
 
   useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node) {
+    if (!selectedSubcategory) {
+      setResults([]);
+      setIsLoadingResults(false);
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting || isLoading || !hasMore) {
-          return;
-        }
+    void loadListings(selectedSubcategory, debouncedSearch);
+  }, [debouncedSearch, loadListings, selectedSubcategory]);
 
-        void executeQuery({
-          query: searchQuery,
-          category: selectedCategory,
-          nextPage: page + 1,
-          replace: false
-        });
-      },
-      { rootMargin: "320px 0px" }
-    );
+  function handleToggleBlock(blockId: CategoryBlockId) {
+    setOpenBlock((current) => (current === blockId ? null : blockId));
+  }
 
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [executeQuery, hasMore, isLoading, page, searchQuery, selectedCategory]);
-
-  const handleInputChange = useCallback(
-    (value: string) => {
-      setSearchQuery(value);
-      debouncedSearch(value, selectedCategory);
-    },
-    [debouncedSearch, selectedCategory]
-  );
-
-  const handleCategoryChange = useCallback(
-    (category: MarketMainCategory) => {
-      setSelectedCategory(category);
-      void executeQuery({
-        query: searchQuery,
-        category,
-        nextPage: 0,
-        replace: true
-      });
-    },
-    [executeQuery, searchQuery]
-  );
-
-  const applyRecentSearch = useCallback(
-    (term: string) => {
-      setSearchQuery(term);
-      void executeQuery({
-        query: term,
-        category: selectedCategory,
-        nextPage: 0,
-        replace: true
-      });
-    },
-    [executeQuery, selectedCategory]
-  );
-
-  const clearSearch = useCallback(() => {
-    setSearchQuery("");
-    void executeQuery({
-      query: "",
-      category: selectedCategory,
-      nextPage: 0,
-      replace: true
-    });
-    inputRef.current?.focus();
-  }, [executeQuery, selectedCategory]);
-
-  const countLabel = searchQuery.trim()
-    ? `${totalCount} ${totalCount === 1 ? "result" : "results"} for '${searchQuery.trim()}'`
-    : selectedCategory === "all"
-      ? `${totalCount} ${totalCount === 1 ? "listing" : "listings"}`
-      : `${totalCount} ${selectedCategory === "items" ? "Items" : selectedCategory === "books" ? "Books" : "Services"}`;
-
-  const emptyCategoryLabel =
-    selectedCategory === "items" ? "Items" : selectedCategory === "books" ? "Books" : "Services";
+  function handleSelectSubcategory(blockId: CategoryBlockId, subcategory: string) {
+    setOpenBlock(blockId);
+    setSelectedSubcategory(subcategory);
+  }
 
   return (
-    <div className="space-y-4 overflow-x-hidden pb-2">
-      <div className="sticky top-0 z-10 -mx-4 bg-[color:rgba(245,245,245,0.95)] px-4 pb-3 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur supports-[backdrop-filter]:bg-[color:rgba(245,245,245,0.82)]">
-        <div className="space-y-3">
-          <div
-            className="flex h-12 items-center gap-2 rounded-full bg-[#F5F5F5] px-4"
-            role="search"
-            aria-label="Search Market"
-          >
-            <SearchIcon />
-            <input
-              ref={inputRef}
-              type="search"
-              value={searchQuery}
-              onChange={(event) => handleInputChange(event.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => {
-                window.setTimeout(() => setIsSearchFocused(false), 150);
-              }}
-              placeholder="Search items, books, services..."
-              className="h-full w-full bg-transparent text-base text-[var(--color-text-primary)] outline-none placeholder:text-[#9A9A9A]"
-            />
-            {searchQuery.trim() ? (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#9A9A9A]"
-                aria-label="Clear search"
-              >
-                <ClearIcon />
-              </button>
-            ) : null}
-          </div>
+    <div className="-mx-4 -my-3 min-h-[calc(100vh-60px)] overflow-x-hidden bg-[#F5F5F5] pb-[calc(env(safe-area-inset-bottom)+100px)]">
+      <div className="border-b border-[#E5E5E5] bg-white px-5 pb-3 pt-4">
+        <h1 className="text-lg font-semibold text-[#1A1A1A]">Market</h1>
+      </div>
 
-          {isSearchFocused && searchQuery.length === 0 && recentSearches.length > 0 ? (
-            <div>
-              <p className="mb-1.5 px-1 text-left text-[11px] text-[#9A9A9A]">Recent</p>
-              <div className="app-scroll -mx-1 flex gap-2 overflow-x-auto px-1">
-                {recentSearches.slice(0, 3).map((term) => (
-                  <button
-                    key={term}
-                    type="button"
-                    onClick={() => applyRecentSearch(term)}
-                    className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#F5F5F5] px-3 text-[12px] font-medium text-[#6B6B6B]"
-                  >
-                    <Clock aria-hidden="true" className="h-3 w-3 text-[#9A9A9A]" strokeWidth={2} />
-                    <span>{term}</span>
-                  </button>
-                ))}
-              </div>
+      <div className="mx-4 mb-2.5 mt-3.5 flex items-center gap-2 rounded-[10px] border border-[#E5E5E5] bg-white px-3.5 py-2.5" style={{ borderWidth: "0.5px" }}>
+        <Search className="h-4 w-4 shrink-0 text-[#9A9A9A]" strokeWidth={2} />
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder="Search items, books, services..."
+          className="min-h-6 w-full bg-transparent text-base text-[#1A1A1A] outline-none placeholder:text-[#9A9A9A]"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2.5 px-4 pt-1">
+        {CATEGORY_BLOCKS.map((block) => (
+          <CategoryBlockCard
+            key={block.id}
+            block={block}
+            counts={counts}
+            isOpen={openBlock === block.id}
+            selectedSubcategory={selectedSubcategory}
+            onToggle={() => handleToggleBlock(block.id)}
+            onSelect={(subcategory) => handleSelectSubcategory(block.id, subcategory)}
+          />
+        ))}
+      </div>
+
+      {!selectedSubcategory ? (
+        <p className="mt-2 px-4 text-center text-[13px] text-[#9A9A9A]">
+          {isLoadingCounts ? "Loading categories..." : "Tap a category to browse listings"}
+        </p>
+      ) : (
+        <section>
+          <p className="mx-4 mb-2 mt-4 text-[13px] text-[#9A9A9A]">
+            {`${results.length} ${results.length === 1 ? "listing" : "listings"} in ${selectedSubcategory}`}
+          </p>
+
+          {error ? (
+            <div className="mx-4 mb-3 rounded-xl border border-[color:rgba(255,107,53,0.24)] bg-[color:rgba(255,107,53,0.10)] px-3 py-2 text-sm text-[#FF6B35]">
+              {error}
             </div>
           ) : null}
 
-          <div className="app-scroll -mx-1 flex gap-2 overflow-x-auto px-1">
-            {[
-              { value: "all" as const, label: "All" },
-              { value: "items" as const, label: "Items" },
-              { value: "books" as const, label: "Books" },
-              { value: "services" as const, label: "Services" }
-            ].map((chip) => {
-              const active = chip.value === selectedCategory;
-              return (
-                <button
-                  key={chip.value}
-                  type="button"
-                  onClick={() => handleCategoryChange(chip.value)}
-                  className={
-                    active
-                      ? "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#0039A6] px-4 text-[13px] font-semibold text-white transition-all duration-150 ease-in-out"
-                      : "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-[#F5F5F5] px-4 text-[13px] font-semibold text-[#6B6B6B] transition-all duration-150 ease-in-out"
-                  }
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="px-1">
-            <p className="text-[13px] text-[#9A9A9A]">{countLabel}</p>
-          </div>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="rounded-xl border border-[color:rgba(255,107,53,0.24)] bg-[color:rgba(255,107,53,0.10)] px-3 py-2 text-sm text-[var(--color-accent)]">
-          {error}
-        </div>
-      ) : null}
-
-      {isLoading && results.length === 0 ? (
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <SkeletonCard key={index} />
-          ))}
-        </div>
-      ) : results.length === 0 ? (
-        searchQuery.trim() ? (
-          <Card className="space-y-4 rounded-2xl p-5 text-center">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center text-[var(--color-text-muted)]">
-              <SearchIcon />
+          {isLoadingResults ? (
+            <div className="grid grid-cols-2 gap-3 px-4 pb-[100px]">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <SkeletonCard key={`market-category-skeleton-${index}`} />
+              ))}
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-                {`Nothing found for '${searchQuery.trim()}'`}
+          ) : results.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 px-4 pb-[100px]">
+              {results.map((item) => (
+                <ListingFeedCard key={`${item.source}:${item.id}`} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="mx-4 rounded-2xl bg-white px-5 py-8 text-center">
+              <SearchX className="mx-auto h-8 w-8 text-[#E5E5E5]" strokeWidth={1.8} />
+              <h2 className="mt-3 text-[15px] font-semibold text-[#1A1A1A]">
+                {`No ${selectedSubcategory} listed yet`}
               </h2>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Be the first to list this on SideSpark
-              </p>
+              <p className="mt-1 text-[13px] text-[#9A9A9A]">Be the first to list one</p>
+              <Link
+                href="/market/sell"
+                className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#0039A6] px-4 text-sm font-semibold text-white"
+              >
+                List Something →
+              </Link>
             </div>
-            <Link
-              href="/market/sell"
-              className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
-            >
-              Sell Yours →
-            </Link>
-          </Card>
-        ) : selectedCategory !== "all" ? (
-          <Card className="space-y-4 rounded-2xl p-5 text-center">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center text-[var(--color-text-muted)]">
-              <CategoryIcon category={selectedCategory} />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-                {`No ${emptyCategoryLabel} listed yet`}
-              </h2>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Check back soon — or be the first
-              </p>
-            </div>
-            <Link
-              href={
-                selectedCategory === "services"
-                  ? "/market/sell/service"
-                  : `/market/sell/item?category=${encodeURIComponent(selectedCategory === "books" ? "Books" : "Items")}`
-              }
-              className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
-            >
-              List Something →
-            </Link>
-          </Card>
-        ) : (
-          <Card className="space-y-4 rounded-2xl p-5 text-center">
-            <div>
-              <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-                No listings yet
-              </h2>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Check back soon — or be the first to post something on SideSpark.
-              </p>
-            </div>
-            <Link
-              href="/market/sell"
-              className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
-            >
-              List Something →
-            </Link>
-          </Card>
-        )
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            {results.map((item) => (
-              <ListingFeedCard key={`${item.source}:${item.id}`} item={item} />
-            ))}
-          </div>
-
-          <div ref={sentinelRef} className="flex min-h-10 items-center justify-center">
-            {isLoading ? (
-              <span className="text-xs text-[var(--color-text-muted)]">Loading more…</span>
-            ) : hasMore ? (
-              <span className="text-xs text-[var(--color-text-muted)]">Scroll for more</span>
-            ) : (
-              <span className="text-xs text-[var(--color-text-muted)]">You&apos;re all caught up</span>
-            )}
-          </div>
-        </>
+          )}
+        </section>
       )}
     </div>
   );
