@@ -109,6 +109,36 @@ export function FeedLanding() {
   const [error, setError] = useState<string | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkProfileCompletion = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session?.user?.id) {
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name,terms_accepted_at")
+        .eq("id", session.user.id)
+        .single();
+
+      if (isMounted && (!profile?.first_name || !profile?.terms_accepted_at)) {
+        router.push("/onboarding");
+      }
+    };
+
+    void checkProfileCompletion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const executeQuery = useCallback(
     async ({
       category,

@@ -5,7 +5,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const MAIN_ROUTE_PREFIXES = ["/feed", "/market", "/messages", "/profile", "/scan", "/rate"];
 const AUTH_REQUIRED_EXTRA = ["/onboarding"];
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/callback", "/reset-password", "/api/health"];
+const PUBLIC_PATHS = ["/login", "/signup", "/callback", "/reset-password", "/terms", "/api/health"];
 const BUTLER_DOMAIN = "@butler.edu";
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -19,6 +19,27 @@ function isProtectedPath(pathname: string) {
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     ) ||
     AUTH_REQUIRED_EXTRA.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  );
+}
+
+function shouldSkipProfileCompletionCheck(pathname: string) {
+  return (
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding/") ||
+    pathname === "/login" ||
+    pathname === "/callback" ||
+    pathname === "/terms" ||
+    pathname === "/reset-password" ||
+    pathname.startsWith("/api/")
+  );
+}
+
+function isMainRoutePath(pathname: string) {
+  return (
+    pathname === "/" ||
+    MAIN_ROUTE_PREFIXES.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     )
   );
@@ -39,7 +60,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { response, user } = await updateSession(request);
+  const { response, supabase, user } = await updateSession(request);
   const userEmail = user?.email ?? null;
 
   if (user && !isDevAnyEmailDomainEnabled() && !isButlerEmail(userEmail)) {
@@ -56,6 +77,21 @@ export async function middleware(request: NextRequest) {
     const nextPath = `${pathname}${request.nextUrl.search || ""}`;
     loginUrl.searchParams.set("next", nextPath);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (user && isMainRoutePath(pathname) && !shouldSkipProfileCompletionCheck(pathname)) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("first_name,terms_accepted_at")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.first_name || !profile?.terms_accepted_at) {
+      const onboardingUrl = request.nextUrl.clone();
+      onboardingUrl.pathname = "/onboarding";
+      onboardingUrl.search = "";
+      return NextResponse.redirect(onboardingUrl);
+    }
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {

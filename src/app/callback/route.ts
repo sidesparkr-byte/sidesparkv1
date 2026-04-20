@@ -32,5 +32,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/reset-password", request.url));
   }
 
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("first_name,terms_accepted_at")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.first_name || !profile?.terms_accepted_at) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+
   return NextResponse.redirect(new URL("/", request.url));
 }
