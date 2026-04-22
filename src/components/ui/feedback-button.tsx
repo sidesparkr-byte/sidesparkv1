@@ -100,11 +100,11 @@ export function FeedbackButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative inline-flex min-h-8 items-center overflow-hidden rounded-full bg-[#0039A6] px-3 py-1.5 text-xs font-medium text-white shadow-[0_4px_12px_rgba(0,57,166,0.22)]"
+        className="relative inline-flex min-h-8 shrink-0 items-center overflow-hidden whitespace-nowrap rounded-full bg-[#0039A6] px-3 py-1.5 text-xs font-medium leading-none text-white shadow-[0_4px_12px_rgba(0,57,166,0.22)]"
         aria-label="Open feedback form"
       >
         <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]" />
-        <span className="relative">Feedback</span>
+        <span className="relative whitespace-nowrap">Feedback</span>
       </button>
 
       {open ? (
