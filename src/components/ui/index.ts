@@ -5,6 +5,7 @@ export * from "@/components/ui/bottom-nav";
 export * from "@/components/ui/button";
 export * from "@/components/ui/card";
 export * from "@/components/ui/empty-state";
+export * from "@/components/ui/feedback-button";
 export * from "@/components/ui/input";
 export * from "@/components/ui/modal";
 export * from "@/components/ui/placeholder-card";
