@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 
 function CloseIcon() {
   return (
@@ -21,6 +22,7 @@ function CloseIcon() {
 export function FeedbackButton() {
   const pathname = usePathname();
   const closeTimerRef = useRef<number | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +30,7 @@ export function FeedbackButton() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     return () => {
       if (closeTimerRef.current) {
         window.clearTimeout(closeTimerRef.current);
@@ -110,64 +113,67 @@ export function FeedbackButton() {
         </span>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Send feedback"
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-[#1A1A1A]">Feedback</h2>
-                <p className="mt-1 text-xs text-[#6B6B6B]">
-                  Tell us what would make SideSpark better.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#6B6B6B]"
-                aria-label="Close feedback modal"
+      {mounted && open
+        ? createPortal(
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Send feedback"
+                className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
               >
-                <CloseIcon />
-              </button>
-            </div>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-[#1A1A1A]">Feedback</h2>
+                    <p className="mt-1 text-xs text-[#6B6B6B]">
+                      Tell us what would make SideSpark better.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#6B6B6B]"
+                    aria-label="Close feedback modal"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
 
-            {successMessage ? (
-              <div className="rounded-2xl bg-[#EEF2FF] px-4 py-5 text-center text-sm leading-6 text-[#0039A6]">
-                {successMessage}
+                {successMessage ? (
+                  <div className="rounded-2xl bg-[#EEF2FF] px-4 py-5 text-center text-sm leading-6 text-[#0039A6]">
+                    {successMessage}
+                  </div>
+                ) : (
+                  <form className="space-y-4" onSubmit={handleSubmit}>
+                    <textarea
+                      value={message}
+                      onChange={(event) => {
+                        setMessage(event.target.value);
+                        if (error) {
+                          setError(null);
+                        }
+                      }}
+                      placeholder="What's on your mind?"
+                      rows={5}
+                      className="min-h-[140px] w-full rounded-2xl border border-[#E5E5E5] px-4 py-3 text-base text-[#1A1A1A] outline-none placeholder:text-[#9A9A9A] focus:border-[#0039A6]"
+                    />
+
+                    {error ? <p className="text-sm text-[#DC2626]">{error}</p> : null}
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#0039A6] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
+                    >
+                      {submitting ? "Sending..." : "Submit"}
+                    </button>
+                  </form>
+                )}
               </div>
-            ) : (
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <textarea
-                  value={message}
-                  onChange={(event) => {
-                    setMessage(event.target.value);
-                    if (error) {
-                      setError(null);
-                    }
-                  }}
-                  placeholder="What's on your mind?"
-                  rows={5}
-                  className="min-h-[140px] w-full rounded-2xl border border-[#E5E5E5] px-4 py-3 text-base text-[#1A1A1A] outline-none placeholder:text-[#9A9A9A] focus:border-[#0039A6]"
-                />
-
-                {error ? <p className="text-sm text-[#DC2626]">{error}</p> : null}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#0039A6] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-80"
-                >
-                  {submitting ? "Sending..." : "Submit"}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }
