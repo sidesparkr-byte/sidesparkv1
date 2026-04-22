@@ -17,7 +17,7 @@ export function AppTopBar() {
         <span className="text-lg font-semibold tracking-tight text-[var(--color-text-primary)]">
           SideSpark
         </span>
-        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+        <div className="absolute right-[max(16px,env(safe-area-inset-right))] top-1/2 z-10 -translate-y-1/2">
           <FeedbackButton />
         </div>
       </div>
