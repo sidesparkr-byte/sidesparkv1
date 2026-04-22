@@ -95,10 +95,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    const marketUrl = request.nextUrl.clone();
-    marketUrl.pathname = "/market";
-    marketUrl.search = "";
-    return NextResponse.redirect(marketUrl);
+    const feedUrl = request.nextUrl.clone();
+    feedUrl.pathname = "/feed";
+    feedUrl.search = "";
+    return NextResponse.redirect(feedUrl);
   }
 
   return response;

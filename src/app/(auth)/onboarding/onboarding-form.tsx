@@ -171,7 +171,7 @@ export function OnboardingForm({
         return;
       }
 
-      router.replace(nextPath || "/market");
+      router.replace(nextPath || "/feed");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to finish onboarding.");

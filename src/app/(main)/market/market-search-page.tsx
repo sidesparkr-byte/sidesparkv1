@@ -261,6 +261,7 @@ export function MarketSearchPage() {
   const supabase = useMemo(() => createClient(), []);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const listingsSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [openBlock, setOpenBlock] = useState<CategoryBlockId | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
@@ -409,13 +410,24 @@ export function MarketSearchPage() {
     void loadListings(selectedSubcategory, debouncedSearch);
   }, [debouncedSearch, loadListings, selectedSubcategory]);
 
+  function scrollToListingsSection() {
+    window.setTimeout(() => {
+      listingsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+  }
+
   function handleToggleBlock(blockId: CategoryBlockId) {
     setOpenBlock((current) => (current === blockId ? null : blockId));
+    scrollToListingsSection();
   }
 
   function handleSelectSubcategory(blockId: CategoryBlockId, subcategory: string) {
     setOpenBlock(blockId);
     setSelectedSubcategory(subcategory);
+    scrollToListingsSection();
   }
 
   return (
@@ -449,12 +461,13 @@ export function MarketSearchPage() {
         ))}
       </div>
 
-      {!selectedSubcategory ? (
-        <p className="mt-2 px-4 text-center text-[13px] text-[#9A9A9A]">
-          {isLoadingCounts ? "Loading categories..." : "Tap a category to browse listings"}
-        </p>
-      ) : (
-        <section>
+      <div ref={listingsSectionRef}>
+        {!selectedSubcategory ? (
+          <p className="mt-2 px-4 text-center text-[13px] text-[#9A9A9A]">
+            {isLoadingCounts ? "Loading categories..." : "Tap a category to browse listings"}
+          </p>
+        ) : (
+          <section>
           <p className="mx-4 mb-2 mt-4 text-[13px] text-[#9A9A9A]">
             {`${results.length} ${results.length === 1 ? "listing" : "listings"} in ${selectedSubcategory}`}
           </p>
@@ -492,8 +505,9 @@ export function MarketSearchPage() {
               </Link>
             </div>
           )}
-        </section>
-      )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
